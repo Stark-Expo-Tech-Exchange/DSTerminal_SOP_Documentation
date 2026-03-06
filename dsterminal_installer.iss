@@ -1,75 +1,65 @@
-; DSTerminal Installer Script
+; DSTerminal Installer Script - Non-Admin Safe
 
 [Setup]
-AppId={{DSTerminal}}
 AppName=DSTerminal
-AppVersion=2.0.59
+AppVersion=v2.0.59
 AppPublisher=Stark Expo Tech Exchange
 AppPublisherURL=https://starkexpotechexchange-mw.com
-DefaultDirName={pf}\DSTerminal
+; Install to AppData to avoid admin rights
+DefaultDirName={userappdata}\DSTerminal
 DefaultGroupName=DSTerminal
 LicenseFile=license.txt
 OutputDir=.
-OutputBaseFilename=DSTerminal_Setup_2.0.59_x64
+OutputBaseFilename=DSTerminal_Installer_v2.1.0
 Compression=lzma
 SolidCompression=yes
+DisableWelcomePage=no
 WizardStyle=modern
-WizardImageFile=installer_assets\logo.bmp
-WizardSmallImageFile=installer_assets\logo_small.bmp
-SetupIconFile=installer_assets\icon.ico
+SetupIconFile=installer_assets/icon.ico
+DisableProgramGroupPage=no
 AllowNoIcons=yes
-ArchitecturesInstallIn64BitMode=x64
-PrivilegesRequired=admin
-UninstallDisplayIcon={app}\dsterminal.exe
+PrivilegesRequired=lowest
+MinVersion=10.0.10240
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
 Source: "dist\dsterminal_win-2.0.59_x64-amd64.exe"; DestDir: "{app}"; DestName: "dsterminal.exe"; Flags: ignoreversion
+Source: "tools\*"; DestDir: "{app}\tools"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "docs\*"; DestDir: "{app}\docs"; Flags: ignoreversion recursesubdirs
+Source: "templates\*"; DestDir: "{app}\templates"; Flags: ignoreversion recursesubdirs
+Source: "config\*"; DestDir: "{app}\config"; Flags: ignoreversion
+Source: "LICENSE.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "README.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "redist\ffmpeg\*"; DestDir: "{app}\ffmpeg"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: IsFFmpegRequired
+Source: "tools\update-helper.ps1"; DestDir: "{app}\tools"; Flags: ignoreversion
+
+[Icons]
+Name: "{group}\DSTerminal"; Filename: "{app}\dsterminal.exe"; WorkingDir: "{userappdata}\DSTerminal_Workspace"
+Name: "{group}\Uninstall DSTerminal"; Filename: "{uninstallexe}"
+Name: "{userdesktop}\DSTerminal"; Filename: "{app}\dsterminal.exe"; Tasks: desktopicon
+
+[Tasks]
+Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional icons:"; Flags: checkedonce
 
 [Dirs]
 Name: "{userappdata}\DSTerminal_Workspace"
-
-[Icons]
-Name: "{group}\DSTerminal"; Filename: "{app}\dsterminal.exe"; IconFilename: "installer_assets\icon.ico"
-Name: "{group}\Uninstall DSTerminal"; Filename: "{uninstallexe}"
-Name: "{commondesktop}\DSTerminal"; Filename: "{app}\dsterminal.exe"; IconFilename: "installer_assets\icon.ico"; Tasks: desktopicon
-
-[Tasks]
-Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional icons:"; Flags: unchecked
-Name: "addtopath"; Description: "Add DSTerminal to system PATH"; GroupDescription: "Additional options:"
-
-[Registry]
-Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; \
-ValueType: expandsz; ValueName: "Path"; \
-ValueData: "{olddata};{app}"; \
-Flags: preservestringtype; \
-Tasks: addtopath; Check: NeedsAddPath(ExpandConstant('{app}'))
+Name: "{userappdata}\DSTerminal_Workspace\scans"
+Name: "{userappdata}\DSTerminal_Workspace\reports"
+Name: "{userappdata}\DSTerminal_Workspace\exploits"
+Name: "{userappdata}\DSTerminal_Workspace\sandbox"
+Name: "{userappdata}\DSTerminal_Workspace\quarantine"
+Name: "{app}\logs"
+Name: "{app}\updates"
 
 [Run]
 Filename: "{app}\dsterminal.exe"; Description: "Launch DSTerminal"; Flags: nowait postinstall skipifsilent
 
 [Code]
-function NeedsAddPath(Param: string): boolean;
-var
-  OrigPath: string;
+function IsFFmpegRequired: Boolean;
 begin
-  if not RegQueryStringValue(HKLM,
-    'SYSTEM\CurrentControlSet\Control\Session Manager\Environment',
-    'Path', OrigPath)
-  then
-    Result := True
-  else
-    Result := Pos(';' + Uppercase(Param) + ';',
-      ';' + Uppercase(OrigPath) + ';') = 0;
-
-// Automatic update check (simple example)
-// This runs DSTerminal.exe with a special update flag after install
-procedure CurStepChanged(CurStep: TSetupStep);
-begin
-  if CurStep = ssPostInstall then
-  begin
-    Exec(ExpandConstant('{app}\DSTerminal.exe'), '--update', '', SW_SHOW, ewNoWait, ResultCode);
-  end;
+  Result := 
+    (FileExists(ExpandConstant('{sys}\ffmpeg.exe')) = False) and
+    (FileExists(ExpandConstant('{app}\ffmpeg\ffmpeg.exe')) = False);
 end;
