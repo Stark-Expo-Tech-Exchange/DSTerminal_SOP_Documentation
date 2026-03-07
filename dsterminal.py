@@ -1109,47 +1109,43 @@ class SecurityTerminal:
                 print(f"\n{Fore.YELLOW}[!] Use 'exit' to quit{Style.RESET_ALL}")
             except Exception as e:
                 print(f"{Fore.RED}[!] Error: {e}{Style.RESET_ALL}")
-    
-    # [Include all your existing methods here: _enlarged_ascii_banner, _matrix_rain_effect, 
-    #  _print_banner, is_admin, _cinematic_typing, _hacking_animation, _progress_bar,
-    #  _network_scan_animation, _vulnerability_scan, _cyber_attack_simulation, harden_system]
-    # (I'm omitting them for brevity, but keep all your existing animation methods)
-
-#  
-#   -------------------------------
+  
 #   metasploit--------------------
 
 
 
 # ------added msf impleme
-
  
     def launch_metasploit(self):
         system = platform.system()
 
-        if system == "Linux":
-            if shutil.which("msfconsole"):
+        try:
+            if system == "Linux":
                 subprocess.call(["msfconsole"])
-            else:
-                print("Metasploit not installed on Linux.")
 
-        elif system == "Windows":
-        # Try WSL
-            try:
-                subprocess.call(["wsl", "msfconsole"])
-            except Exception:
-                print("Metasploit not available via WSL.")
+            elif system == "Windows":
 
-        elif system == "Darwin":  # macOS
-            if shutil.which("msfconsole"):
+                try:
+                    result =subprocess.run(
+                        ["wsl", "bash", "-c", "command -v msfconsole"],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE
+                    )
+                    if result.returncode == 0:
+                        return True
+                except Exception as e:
+                    pass
+                return shutil.which("msfconsole") is not None
+
+            elif system == "Darwin":
                 subprocess.call(["msfconsole"])
+
             else:
-                print("Metasploit not installed. Try: brew install metasploit")
+                print("Unsupported OS.")
 
-        else:
-            print("Unsupported OS.")
+        except FileNotFoundError:
+            print(f"{Fore.RED}[!] msfconsole not found in PATH{Style.RESET_ALL}")
 
-    
     def check_metasploit_installed(self):
         system = platform.system()
 
@@ -1259,12 +1255,52 @@ class SecurityTerminal:
             time.sleep(0.2)
         
         self.play_beep()
-    
+
+    def show_metasploit_install_guide(self):
+        """Show installation instructions for Metasploit"""
+
+        system = platform.system()
+
+        print(f"{Fore.RED}[!] Metasploit Framework not detected on this system.{Style.RESET_ALL}\n")
+
+        if system == "Linux":
+            print(Fore.CYAN + "[Linux Installation]" + Style.RESET_ALL)
+            print("Recommended installation:")
+            print(Fore.YELLOW + "  sudo apt update && sudo apt install metasploit-framework\n" + Style.RESET_ALL)
+
+            print("Alternative (official installer):")
+            print("  curl https://raw.githubusercontent.com/rapid7/metasploit-framework/master/msfinstall | sudo bash\n")
+
+        elif system == "Windows":
+            print(Fore.CYAN + "[Windows Installation]" + Style.RESET_ALL)
+
+            print("Option 1: Install via WSL (Recommended)")
+            print(Fore.YELLOW + "  wsl --install\n" + Style.RESET_ALL)
+            print("Then install metasploit inside WSL:")
+
+            print(Fore.YELLOW + "  sudo apt install metasploit-framework\n" + Style.RESET_ALL)
+
+            print("Option 2: Use the official Windows installer:")
+            print("  https://www.metasploit.com/download\n")
+
+        elif system == "Darwin":
+            print(Fore.CYAN + "[macOS Installation]" + Style.RESET_ALL)
+
+            print("Install via Homebrew:")
+            print(Fore.YELLOW + "  brew install metasploit\n" + Style.RESET_ALL)
+
+            print("Official installer:")
+            print("  https://www.metasploit.com/download\n")
+
+        else:
+            print("Unsupported operating system.\n")
+
+        print(Fore.GREEN + "[*] After installation, restart DSTerminal and run 'msf' again." + Style.RESET_ALL)
+
     def handle_msf(self, args):
         """Handle Metasploit launch with cinematic effects"""
         if not self.check_metasploit_installed():
-            print(f"{Fore.RED}[!] Metasploit Framework can only run if installed and in Linux platform{Style.RESET_ALL}")
-            print(f"{Fore.YELLOW}[!] Install with: sudo apt install metasploit-framework{Style.RESET_ALL}")
+            self.show_metasploit_install_guide()
             return
         
         # Clear screen for cinematic effect

@@ -1,0 +1,10 @@
+# Nmap 7.98 scan initiated Sat Mar  7 08:46:51 2026 as: nmap -oN C:\\Users\\stark\\Downloads\\DSTerminal_releases_latest-master\\DSTerminal_releases_latest-master\\DSTerminal_Workspace\\scans\\nmap_unima.ac.mw_20260307_084650.txt unima.ac.mw
+Nmap scan report for unima.ac.mw (41.70.32.5)
+Host is up (0.068s latency).
+Other addresses for unima.ac.mw (not scanned): 2c0f:ea60:200:2::5
+Not shown: 998 filtered tcp ports (no-response)
+PORT    STATE SERVICE
+80/tcp  open  http
+443/tcp open  https
+
+# Nmap done at Sat Mar  7 08:47:01 2026 -- 1 IP address (1 host up) scanned in 10.10 seconds
