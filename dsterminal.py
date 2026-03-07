@@ -4331,8 +4331,17 @@ class SecurityTerminal:
             return True
 
 # --------------------------for updates above code--------------------
-    def clear_terminal_advanced(self):
+
+# ---------------------------wipe tracks and terminal clearing
+    def clear_terminal(self):
         """Advanced terminal clearing with spinning boxes and centered animations"""
+        from rich.console import Console
+        from rich.panel import Panel
+        from rich.align import Align
+        from rich.live import Live
+        from rich.layout import Layout
+        import platform
+    
         console = Console()
         terminal_width = shutil.get_terminal_size((80, 20)).columns
         panel_width = min(70, terminal_width - 10)
@@ -4355,7 +4364,7 @@ class SecurityTerminal:
         with Live(console=console, refresh_per_second=12, screen=True) as live:
             for phase in range(4):  # 4 phases of clearing
                 for step in range(25):  # 25 steps per phase
-                    # Select spinner based on phase
+                # Select spinner based on phase
                     spinner_type = list(spinners.keys())[phase % len(spinners)]
                     spinner = spinners[spinner_type][step % len(spinners[spinner_type])]
                 
@@ -4385,7 +4394,14 @@ class SecurityTerminal:
                     else:
                         glitch = ""
                 
-                # Create main content with nested boxes
+                # Create stats content
+                    stats_content = (
+                        f"[cyan]CPU: [green]{random.randint(20, 95)}%[/green]\n"
+                        f"[cyan]MEM: [yellow]{random.randint(100, 500)}MB[/yellow]\n"
+                        f"[cyan]PID: [white]{os.getpid()}[/white]"
+                    )
+                
+                # Create main content
                     main_content = Panel(
                         Align.center(
                             f"[bold {color}]{spinner} {phase_text} {spinner}[/bold {color}]\n\n"
@@ -4399,27 +4415,24 @@ class SecurityTerminal:
                         width=panel_width
                     )
                 
-                # Add a secondary box for system stats
+                # Create stats box
                     stats_box = Panel(
-                        Align.center(
-                            f"[cyan]CPU: [green]{random.randint(20, 95)}%[/green]\n"
-                            f"[cyan]MEM: [yellow]{random.randint(100, 500)}MB[/yellow]\n"
-                            f"[cyan]PID: [white]{os.getpid()}[/white]",
-                            vertical="middle"
-                        ),
+                        Align.center(stats_content, vertical="middle"),
                         title="[bold white]SYS STATS[/bold white]",
                         border_style="bright_black",
-                        width=panel_width - 4
+                        width=panel_width - 4,
+                        padding=(1, 1)
                     )
                 
-                # Combine both panels
-                    final_display = Align.center(
-                        Group(
-                            main_content,
-                            Spacer(1),
-                            stats_box
-                        )
+                # Create layout to combine panels
+                    layout = Layout()
+                    layout.split_column(
+                        Layout(main_content),
+                        Layout(stats_box)
                     )
+                
+                # Center everything
+                    final_display = Align.center(layout)
                 
                     live.update(final_display)
                     time.sleep(0.05)
@@ -4482,7 +4495,7 @@ class SecurityTerminal:
         )
     
         console.print(Align.center(status_panel))
-        print()  # Extra newline for spacing
+        print()
 
     # =======ends here from above-==============
     def emergency_shutdown(self):
@@ -4523,34 +4536,34 @@ class SecurityTerminal:
             console.print("[yellow]Unsupported OS for shutdown command.[/yellow]")
 
 # shutting down ends here
-    def clear_terminal(self):
-        console = Console()
+    # def clear_terminal(self):
+    #     console = Console()
 
-        panel = Panel(
-            Align.center("[cyan]Resetting interface...[/cyan]", vertical="middle"),
-            title="[bold white]TERMINAL WIPE[/bold white]",
-            border_style="bright_cyan",
-            padding=(1, 2),
-            width=50
-        )
+    #     panel = Panel(
+    #         Align.center("[cyan]Resetting interface...[/cyan]", vertical="middle"),
+    #         title="[bold white]TERMINAL WIPE[/bold white]",
+    #         border_style="bright_cyan",
+    #         padding=(1, 2),
+    #         width=50
+    #     )
 
-        with Live(console=console, refresh_per_second=5, screen=True) as live:
-            for i in range(10):
-                live.update(Panel(f"[cyan]Wiping in progress... {10 - i}[/cyan]", title="[bold]CLEANING TERMINAL[/bold]", border_style="bright_cyan", width=50))
-                time.sleep(1)
+    #     with Live(console=console, refresh_per_second=5, screen=True) as live:
+    #         for i in range(10):
+    #             live.update(Panel(f"[cyan]Wiping in progress... {10 - i}[/cyan]", title="[bold]CLEANING TERMINAL[/bold]", border_style="bright_cyan", width=50))
+    #             time.sleep(1)
 
-        os.system("clear" if platform.system() != "Windows" else "cls")
+    #     os.system("clear" if platform.system() != "Windows" else "cls")
 
-        banner = """
-            ██████╗ ███████╗███████╗███████╗███╗   ██╗███████╗██╗  ██╗
-            ██╔══██╗██╔════╝██╔════╝██╔════╝████╗  ██║██╔════╝╚██╗██╔╝
-            ██║  ██║█████╗  █████╗  █████╗  ██╔██╗ ██║█████╗   ╚███╔╝ 
-            ██║  ██║██╔══╝  ██╔══╝  ██╔══╝  ██║╚██╗██║██╔══╝   ██╔██╗ 
-            ██████╔╝██║     ██║     ███████╗██║ ╚████║███████╗██╔╝ ██╗
-            ╚═════╝ ╚═╝     ╚═╝     ╚══════╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝
-        """
-        centered_banner = Align.center(f"[bold cyan]{banner}[/bold cyan]", vertical="middle")
-        console.print(centered_banner)
+    #     banner = """
+    #         ██████╗ ███████╗███████╗███████╗███╗   ██╗███████╗██╗  ██╗
+    #         ██╔══██╗██╔════╝██╔════╝██╔════╝████╗  ██║██╔════╝╚██╗██╔╝
+    #         ██║  ██║█████╗  █████╗  █████╗  ██╔██╗ ██║█████╗   ╚███╔╝ 
+    #         ██║  ██║██╔══╝  ██╔══╝  ██╔══╝  ██║╚██╗██║██╔══╝   ██╔██╗ 
+    #         ██████╔╝██║     ██║     ███████╗██║ ╚████║███████╗██╔╝ ██╗
+    #         ╚═════╝ ╚═╝     ╚═╝     ╚══════╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝
+    #     """
+    #     centered_banner = Align.center(f"[bold cyan]{banner}[/bold cyan]", vertical="middle")
+    #     console.print(centered_banner)
 
 
 # =======testing code from above ends here for shutdown command
