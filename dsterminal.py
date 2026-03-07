@@ -1,4 +1,5 @@
 import os
+from turtle import color
 # ===============================
 # Cross-platform terminal support
 # ===============================
@@ -58,7 +59,7 @@ from collections import Counter
 
 from rich.console import Console
 from rich.layout import Layout
-from rich.table import Table as RichTable
+from rich.table import Table as Table
 from random import choice
 from rich.prompt import Prompt
 # from rich.group import Group
@@ -899,52 +900,70 @@ class SecurityTerminal:
             print(f"{Fore.RED}[!] Error creating file: {e}{Style.RESET_ALL}")
     
     # -----------------------echo function
+ 
+    # ------------------------folder/file navigation-------------
     def handle_echo(self, user_input):
         """
-        echo text
-        echo text > file
-        echo text >> file
+        Handle the echo command:
+        - echo text
+        - echo text > file
+        - echo text >> file
         """
         try:
-        # Parse the command properly
-            if '>' not in user_input and '>>' not in user_input:
-                # Simple echo
-                print(user_input[5:])  # Remove 'echo ' from beginning
+            # Remove leading/trailing whitespace
+            user_input = user_input.strip()
+
+            # Must start with 'echo'
+            if not user_input.lower().startswith("echo"):
+                print("[!] Invalid echo command")
                 return
-        
-        # Handle redirection
-            if '>>' in user_input:
-                parts = user_input.split('>>')
-                mode = 'a'
-            else:  # '>' in user_input
-                parts = user_input.split('>')
-                mode = 'w'
-        
-        # Get text and filename
-            text_part = parts[0].replace('echo', '', 1).strip()
-            filename = parts[1].strip()
-        
+
+        # Remove 'echo' from start
+            command_body = user_input[4:].strip()  # safely remove first 4 chars
+
+        # Check for file redirection
+            if '>>' in command_body:
+                parts = command_body.split('>>', 1)
+                text_part = parts[0].strip()
+                filename = parts[1].strip()
+                mode = 'a'  # append
+            elif '>' in command_body:
+                parts = command_body.split('>', 1)
+                text_part = parts[0].strip()
+                filename = parts[1].strip()
+                mode = 'w'  # overwrite
+            else:
+            # Simple echo (no file)
+                print(command_body)
+                return
+
         # Remove quotes if present
             text_part = text_part.strip('"').strip("'")
-        
-        # Get safe path
+
+        # Resolve safe path
             path = self.safe_path(filename)
-        
+
+        # Make sure directory exists
+            dir_name = os.path.dirname(path)
+            if dir_name:
+                os.makedirs(dir_name, exist_ok=True)
+
         # Write to file
-            with open(path, mode) as f:
+            with open(path, mode, encoding='utf-8') as f:
                 f.write(text_part + '\n')
-        
-            print(f"{Fore.GREEN}[+] Written to {filename}{Style.RESET_ALL}")
-            print(f"{Fore.GREEN}   Content: '{text_part}'{Style.RESET_ALL}")
-        
+
+            print(f"[+] Written to {filename}")
+            print(f"   Content: '{text_part}'")
+            print(f"[DEBUG] Full path: {path}")
+
         except Exception as e:
-            print(f"{Fore.RED}[!] Echo failed: {e}{Style.RESET_ALL}")
-    # ------------------------folder/file navigation-------------
+            print(f"[!] Echo failed: {e}")
+    
     def pwd(self):
         """Print working directory"""
         # Replace workspace root with ~ for display
         display_path = self.current_dir.replace(self.workspace_root, "~")
-        print(display_path)
+        print(display_path) 
     
     # ---------------------------------
     def ls(self, path="."):
@@ -1009,19 +1028,26 @@ class SecurityTerminal:
     def process_command(self, user_input):
         """Process and dispatch commands"""
         if not user_input.strip():
-            return
-        
+            return True  # Nothing to do, continue
+
+    # Handle echo first to preserve the raw string
+        if user_input.strip().lower().startswith("echo"):
+            self.handle_echo(user_input)
+            return True
+
+    # Otherwise, parse normally
+        import shlex
         parts = shlex.split(user_input)
         command = parts[0].lower()
         args = parts[1:] if len(parts) > 1 else []
-        
-        # Command dispatch
+
+    # Command dispatch
         if command == "help":
             self.show_help()
-        elif command == "exit" or command == "quit":
+        elif command in ("exit", "quit"):
             print(f"{Fore.YELLOW}[+] Exiting DSTerminal...{Style.RESET_ALL}")
             return False
-        elif command == "clear" or command == "cls":
+        elif command in ("clear", "cls"):
             os.system('cls' if os.name == 'nt' else 'clear')
         elif command == "pwd":
             self.pwd()
@@ -1047,17 +1073,14 @@ class SecurityTerminal:
                 self.cat(args[0])
             else:
                 print(f"{Fore.RED}[!] Usage: cat <filename>{Style.RESET_ALL}")
-        elif command == "echo":
-            self.handle_echo(user_input)
         elif command == "harden":
-            # Parse harden command options
             dry_run = "-t" in args or "--test" in args
             self.harden_system(dry_run=dry_run)
         else:
             print(f"{Fore.RED}[!] Unknown command: '{command}'. Type 'help' for available commands.{Style.RESET_ALL}")
-        
+
         return True
-    
+
     def show_help(self):
         """Display help information"""
         help_text = f"""
@@ -1546,7 +1569,7 @@ class SecurityTerminal:
 
         results = self.generate_scan_results(stage_name)
 
-        table = RichTable(title=stage_name, header_style="bold magenta")
+        table = Table(title=stage_name, header_style="bold magenta")
         table.add_column("Check", style="cyan", width=25)
         table.add_column("Result", width=30)
         table.add_column("Status", width=12)
@@ -1625,7 +1648,7 @@ class SecurityTerminal:
     # Generate connection table
     # ----------------------------
         def generate_connection_table(connections):
-            table = RichTable()
+            table = Table()
 
             table.add_column("LOCAL", style="cyan")
             table.add_column("→", justify="center")
@@ -1770,7 +1793,7 @@ class SecurityTerminal:
 
                     table = generate_connection_table(connections)
 
-                    stats = RichTable()
+                    stats = Table()
                     stats.add_column("Metric")
                     stats.add_column("Value")
 
@@ -1789,7 +1812,7 @@ class SecurityTerminal:
                     for alert in alerts:
                         console.print(f"[bold red]⚠ INTRUSION ALERT: {alert}")
 
-                    dashboard = RichTable.grid(expand=True)
+                    dashboard = Table.grid(expand=True)
                     dashboard.add_row(bandwidth_panel)
                     dashboard.add_row(
                         Panel(
@@ -3285,19 +3308,63 @@ class SecurityTerminal:
 
         except Exception as e:
             print(f"[!] Analysis error: {e}")
+# certificate check impleme below
 
-  
+    def certcheck(self, domain=None):
+        """
+        DSTerminal SSL/TLS Certificate Checker with cinematic hacking animation.
+        """
+        try:
+        # Prompt for domain if not provided
+            if not domain:
+                domain = input("\nEnter domain to check (e.g., starkexpo.com): ").strip()
+                if not domain:
+                    print("[!] No domain provided")
+                    return
+
+        # Cinematic header
+            banner = """
+            ████╗  █████╗  ██╔██╗ ██║█████╗   ╚███╔╝
+            ██║  ██║██╔══╝  ██╔══╝  ██╔══╝  ██║╚██╗██║
+            ██████╔╝██║     ██║     ███████╗██║ ╚████║
+            ╚═════╝ ╚═╝     ╚═╝     ╚══════╝╚═╝  ╚═══╝
+            """
+            print(banner)
+            print(f"\n[-- DFFENEX@DSTerminal ]-[] certcheck")
+            time.sleep(0.5)
+
+        # Stage animations for cinematic effect
+            stages = [
+                "Initializing SSL Inspection Engine",
+                "Analyzing TLS Handshake",
+                "Validating Certificate Chain",
+                "Mapping Trust Relationships",
+                "Running Risk Assessment Engine",
+                "Generating Defense Recommendations"
+            ]
+
+            for stage in stages:
+                self._loading_animation(stage, 5)  # 5 seconds per stage for cinematic pacing
+
+        # Run the comprehensive SSL check
+            self.check_ssl(domain)
+
+            print(f"\n[-- DFFENEX@DSTerminal ]-[]")
+
+        except Exception as e:
+            print(f"[!] Certificate check failed: {e}")
+
     def check_ssl(self, domain=None):
         """Comprehensive SSL certificate analyzer with export options"""
         try:
-           
             if not domain:
                 domain = input("Enter domain to check (e.g., starkexpo.com): ").strip()
                 if not domain:
                     print("[!] No domain provided")
                     return
         
-            print(f"\n[+] Analyzing SSL certificate for {domain}...")
+        # Run cinematic scanning sequence
+            self._animated_ssl_scan()
         
         # Configure enhanced SSL context
             context = ssl.create_default_context()
@@ -3350,166 +3417,322 @@ class SecurityTerminal:
                     if len(chain) > 1:
                         ocsp_status = self._check_ocsp(cert_obj, chain[1])
                 
-                # Print comprehensive report
+                # Print comprehensive report with animated table
                     self._print_ssl_report(domain, ssock, cert_obj, chain, ocsp_status, valid_days)
     
         except ssl.SSLError as e:
-            print(f"[!] SSL Error: {e}")
+            self._cinematic_box(f"[!] SSL Error: {e}", seconds=2, error=True)
         except socket.timeout:
-            print("[!] Connection timed out")
+            self._cinematic_box("[!] Connection timed out", seconds=2, error=True)
         except ImportError as e:
-            print(f"[!] Required module missing: {str(e)}")
+            self._cinematic_box(f"[!] Required module missing: {str(e)}", seconds=3, error=True)
             print("[!] Please install pyOpenSSL: pip install pyopenssl")
         except Exception as e:
-            print(f"[!] Analysis failed: {str(e)}")
- 
+            self._cinematic_box(f"[!] Analysis failed: {str(e)}", seconds=2, error=True)
+
+    def _cinematic_box(self, title, seconds=3, error=False):
+        """Display a centered colored box with progress and flickering messages"""
+        terminal_width = shutil.get_terminal_size((80, 20)).columns
+        box_width = min(60, terminal_width - 10)
+    
+    # Center the box
+        left_padding = (terminal_width - box_width - 2) // 2
+    
+    # Random colors or error color
+        if error:
+            colors = [Fore.RED, Fore.LIGHTRED_EX]
+        else:
+            colors = [Fore.GREEN, Fore.CYAN, Fore.MAGENTA, Fore.YELLOW, Fore.LIGHTGREEN_EX]
+        color = random.choice(colors)
+        blink = "\033[5m" if not error else ""
+    
+    # Clear line and create centered box
+        sys.stdout.write("\033[K")  # Clear current line
+    
+    # Top border (centered)
+        print(" " * left_padding + color + "┌" + "─" * box_width + "┐" + Style.RESET_ALL)
+    
+    # Title with blinking effect
+        title_text = f"{blink}{title}{Style.RESET_ALL}" if not error else title
+        print(" " * left_padding + color + "│" + Style.RESET_ALL + f" {title_text}".ljust(box_width + 1) + color + "│" + Style.RESET_ALL)
+        print(" " * left_padding + color + "├" + "─" * box_width + "┤" + Style.RESET_ALL)
+    
+    # Animation inside box
+        spinner = ["⠋","⠙","⠹","⠸","⠼","⠴","⠦","⠧","⠇","⠏"]
+        flickers = [
+            "[SCANNING...]", "[TLS CHECK]", "[OCSP QUERY]", 
+            "[CERT VERIFY]", "[RISK ASSESS]", "[CHAIN ANALYZE]",
+            "[PROTOCOL SCAN]", "[CIPHER CHECK]", "[SIGNATURE VERIFY]"
+        ]
+        end_time = time.time() + seconds
+        i = 0
+    
+        while time.time() < end_time:
+            progress = int(((time.time() % seconds) / seconds) * (box_width - 10))
+            bar = "█" * progress + "░" * (box_width - 10 - progress)
+            flicker_text = random.choice(flickers)
+        
+        # Create the content line
+            content = f"{spinner[i%len(spinner)]} {bar} {flicker_text}"
+            content = content[:box_width-2].ljust(box_width-2)
+        
+        # Position cursor and update
+            sys.stdout.write(f"\033[s")  # Save position
+            sys.stdout.write(f"\033[{left_padding+1}G")  # Move to start of box content
+            sys.stdout.write(color + "│" + Style.RESET_ALL + f" {content} " + color + "│" + Style.RESET_ALL)
+            sys.stdout.write(f"\033[u")  # Restore position
+            sys.stdout.flush()
+            time.sleep(0.1)
+            i += 1
+    
+    # Bottom border (centered)
+        print("\n" + " " * left_padding + color + "└" + "─" * box_width + "┘" + Style.RESET_ALL)
+        sys.stdout.flush()
+
+    def _animated_ssl_scan(self):
+        """Run animated scanning stages"""
+        stages = [
+            "INITIALIZING SSL INSPECTION ENGINE",
+            "ANALYZING TLS HANDSHAKE PROTOCOL",
+            "VALIDATING CERTIFICATE CHAIN",
+            "MAPPING TRUST RELATIONSHIPS",
+            "RUNNING RISK ASSESSMENT ENGINE",
+            "GENERATING DEFENSE RECOMMENDATIONS"
+        ]
+    
+        terminal_width = shutil.get_terminal_size((80, 20)).columns
+    
+        for i, stage in enumerate(stages):
+        # Clear screen effect between stages (optional)
+            if i > 0:
+                time.sleep(0.3)
+        
+            self._cinematic_box(stage, seconds=3)
+        
+        # Glitch effect between stages
+            if i < len(stages) - 1:
+                glitch_color = random.choice([Fore.GREEN, Fore.CYAN, Fore.MAGENTA])
+                glitch_text = f"{glitch_color}[SYSTEM]{Style.RESET_ALL} Stage {i+1} complete..."
+                print(" " * ((terminal_width - len(glitch_text) + 30) // 2) + glitch_text)
+                time.sleep(0.2)
+
+    def _animated_ssl_table(self, cert_data):
+        """Display certificate info in colored, blinking table"""
+        terminal_width = shutil.get_terminal_size((80, 20)).columns
+        table_width = min(70, terminal_width - 10)
+        left_padding = (terminal_width - table_width - 2) // 2
+    
+        colors = [Fore.GREEN, Fore.CYAN, Fore.MAGENTA, Fore.YELLOW, Fore.LIGHTGREEN_EX]
+        blink = "\033[5m"
+    
+    # Clear screen area for table
+        print("\n" * 2)
+    
+    # Top border with title
+        print(" " * left_padding + Fore.CYAN + "╔" + "═" * table_width + "╗" + Style.RESET_ALL)
+        title = "🔐 DSTERMINAL SSL/TLS SECURITY AUDIT 🔐"
+        print(" " * left_padding + Fore.CYAN + "║" + Style.RESET_ALL + f"{blink}{Fore.LIGHTYELLOW_EX}{title:^{table_width}}{Style.RESET_ALL}" + Fore.CYAN + "║" + Style.RESET_ALL)
+        print(" " * left_padding + Fore.CYAN + "╠" + "═" * table_width + "╣" + Style.RESET_ALL)
+    
+    # Table content with blinking effect
+        for key, value in cert_data.items():
+            color = random.choice(colors)
+        
+        # Format key with color and blink
+            key_str = f"{color}{blink}{key.upper()}{Style.RESET_ALL}"
+        
+        # Format value based on type
+            if isinstance(value, (int, float)):
+                if value < 0:
+                    value_str = f"{Fore.RED}{value}{Style.RESET_ALL}"
+                elif value < 30:
+                    value_str = f"{Fore.YELLOW}{value}{Style.RESET_ALL}"
+                else:
+                    value_str = f"{Fore.GREEN}{value}{Style.RESET_ALL}"
+            elif "HIGH" in str(value) or "CRITICAL" in str(value):
+                value_str = f"{Fore.RED}{blink}{value}{Style.RESET_ALL}"
+            elif "MEDIUM" in str(value):
+                value_str = f"{Fore.YELLOW}{value}{Style.RESET_ALL}"
+            else:
+                value_str = f"{Fore.WHITE}{value}{Style.RESET_ALL}"
+        
+        # Create row with proper spacing
+            row = f" {key_str:<20} {value_str:<{table_width-23}}"
+        
+        # Print row with animation
+            print(" " * left_padding + Fore.CYAN + "║" + Style.RESET_ALL + row + " " * (table_width - len(row) + 1) + Fore.CYAN + "║" + Style.RESET_ALL)
+            time.sleep(0.1)  # Typing effect
+    
+    # Bottom border
+        print(" " * left_padding + Fore.CYAN + "╚" + "═" * table_width + "╝" + Style.RESET_ALL)
+    
+    # Add status line
+        status = f"{Fore.GREEN}[✓] SCAN COMPLETE • {datetime.now().strftime('%H:%M:%S')}{Style.RESET_ALL}"
+        print(" " * ((terminal_width - len(status)) // 2) + status)
 
     def _print_ssl_report(self, domain, ssock, cert_obj, chain, ocsp_status, valid_days):
-
-    # Stage 1: Initialization
-        self._loading_animation("Initializing SSL Inspection Engine", 10)
-
-    # Stage 2: Handshake Analysis
-        self._loading_animation("Analyzing TLS Handshake", 10)
-
-    # Stage 3: Certificate Validation
-        self._loading_animation("Validating Certificate Chain", 10)
-
+        """Enhanced SSL report with centered animated display"""
+    
+    # Stage 1-6: Animated scanning
+        self._animated_ssl_scan()
+    
+    # Gather certificate data
         protocol = ssock.version()
         cipher = ssock.cipher()[0]
         sig_algo = cert_obj.get_signature_algorithm().decode()
-
-        tls13_supported = protocol == "TLSv1.3"
-        renewal_warning = valid_days < 60
-
-    # Basic Info
-        print("\n╔" + "═"*70 + "╗")
-        print(f"║ {'DSTerminal SSL/TLS Security Audit':^68} ║")
-        print("╠" + "═"*70 + "╣")
-
-        print(f"║ {'Domain:':<20} {domain:<46} ║")
-        print(f"║ {'Issuer:':<20} {cert_obj.get_issuer().CN:<46} ║")
-        print(f"║ {'Subject:':<20} {cert_obj.get_subject().CN:<46} ║")
-        print(f"║ {'Expires:':<20} {cert_obj.get_notAfter().decode()} ({valid_days} days) ║")
-        print(f"║ {'Protocol:':<20} {protocol:<46} ║")
-        print(f"║ {'Cipher:':<20} {cipher:<46} ║")
-        print(f"║ {'Signature:':<20} {sig_algo:<46} ║")
-        print(f"║ {'OCSP Status:':<20} {ocsp_status:<46} ║")
-
-        print("╚" + "═"*70 + "╝")
-
-    # Stage 4: Chain Mapping
-        self._loading_animation("Mapping Trust Relationships", 10)
-
-        print("\n[ Certificate Chain ]")
-
-        for i, cert in enumerate(chain):
-            print(f"{'  '*i}└─ {cert['subject'].get(b'CN', b'Unknown').decode()}")
-            if i == 0:
-                print(f"    Issuer: {cert['issuer'].get(b'CN', b'Unknown').decode()}")
-                print(f"    Valid Until: {cert['expires']}")
-
-    # Stage 5: Risk Engine
-        self._loading_animation("Running Risk Assessment Engine", 10)
-
-        print("\n[ Security Assessment ]")
-
+    
+    # Calculate risk level
         risk = 0
-
-        if renewal_warning:
-            print("[!] Certificate renewal required soon")
+        if valid_days < 60:
             risk += 2
-
         if "SHA1" in sig_algo:
-            print("[!] Weak signature algorithm (SHA-1)")
             risk += 3
-
         if protocol in ["TLSv1", "TLSv1.1"]:
-            print("[!] Deprecated TLS protocol")
             risk += 4
-
-        if not tls13_supported:
-            print("[!] TLS 1.3 not enabled")
+        if protocol != "TLSv1.3":
             risk += 1
-
         if ocsp_status != "VALID":
-            print("[!] OCSP revocation not verified")
             risk += 2
-
+    
         if risk == 0:
             level = "LOW"
+            risk_color = Fore.GREEN
         elif risk <= 3:
             level = "MEDIUM"
+            risk_color = Fore.YELLOW
         elif risk <= 6:
             level = "HIGH"
+            risk_color = Fore.RED
         else:
             level = "CRITICAL"
-
-        print(f"\n[✓] Overall Risk Level: {level}")
-
-        # Build report data
+            risk_color = Fore.RED + "\033[5m"  # Blinking red for critical
+    
+    # Prepare certificate data for table
+        cert_data = {
+            "domain": domain,
+            "issuer": cert_obj.get_issuer().CN,
+            "subject": cert_obj.get_subject().CN,
+            "expires": f"{cert_obj.get_notAfter().decode()} ({valid_days} days)",
+            "protocol": protocol,
+            "cipher": cipher[:40] + "..." if len(cipher) > 40 else cipher,
+            "signature": sig_algo,
+            "ocsp status": ocsp_status,
+            "risk level": f"{risk_color}{level}{Style.RESET_ALL}",
+            "chain length": len(chain)
+        }
+    
+    # Display animated table
+        self._animated_ssl_table(cert_data)
+    
+    # Certificate chain display
+        print("\n" + "═" * shutil.get_terminal_size().columns)
+        chain_title = f"{Fore.CYAN}🔗 CERTIFICATE CHAIN ANALYSIS{Style.RESET_ALL}"
+        print(chain_title.center(shutil.get_terminal_size().columns))
+        print("═" * shutil.get_terminal_size().columns)
+    
+        for i, cert in enumerate(chain):
+            indent = "  " * i
+            subject = cert['subject'].get(b'CN', b'Unknown').decode()
+            issuer = cert['issuer'].get(b'CN', b'Unknown').decode()
+        
+        # Color based on depth
+            if i == 0:
+                color = Fore.GREEN  # Leaf certificate
+            elif i == len(chain) - 1:
+                color = Fore.YELLOW  # Root certificate
+            else:
+                color = Fore.CYAN  # Intermediate
+        
+            print(f"{indent} {color}├─ {subject}{Style.RESET_ALL}")
+            if i == 0:
+                print(f"{indent}    Issuer: {issuer}")
+                print(f"{indent}    Valid: {cert['expires'][:8]}")
+    
+    # Security assessment
+        print("\n" + "═" * shutil.get_terminal_size().columns)
+        assess_title = f"{Fore.MAGENTA}🛡️ SECURITY ASSESSMENT{Style.RESET_ALL}"
+        print(assess_title.center(shutil.get_terminal_size().columns))
+        print("═" * shutil.get_terminal_size().columns)
+    
+        warnings = []
+        if valid_days < 60:
+            warnings.append(f"{Fore.YELLOW}⚠ Certificate expires soon ({valid_days} days){Style.RESET_ALL}")
+        if "SHA1" in sig_algo:
+            warnings.append(f"{Fore.RED}✗ Weak signature algorithm (SHA-1){Style.RESET_ALL}")
+        if protocol in ["TLSv1", "TLSv1.1"]:
+            warnings.append(f"{Fore.RED}✗ Deprecated TLS protocol{Style.RESET_ALL}")
+        if protocol != "TLSv1.3":
+            warnings.append(f"{Fore.YELLOW}⚠ TLS 1.3 not enabled{Style.RESET_ALL}")
+        if ocsp_status != "VALID":
+            warnings.append(f"{Fore.YELLOW}⚠ OCSP revocation not verified{Style.RESET_ALL}")
+    
+        if warnings:
+            for warning in warnings:
+                print(f"  {warning}")
+        else:
+            print(f"  {Fore.GREEN}✓ No security issues detected{Style.RESET_ALL}")
+    
+    # Recommendations
+        print("\n" + "═" * shutil.get_terminal_size().columns)
+        rec_title = f"{Fore.BLUE}💡 RECOMMENDATIONS{Style.RESET_ALL}"
+        print(rec_title.center(shutil.get_terminal_size().columns))
+        print("═" * shutil.get_terminal_size().columns)
+    
+        if valid_days < 60:
+            print(f"  {Fore.YELLOW}→ Renew SSL certificate immediately{Style.RESET_ALL}")
+        if protocol != "TLSv1.3":
+            print(f"  {Fore.CYAN}→ Upgrade server to support TLS 1.3{Style.RESET_ALL}")
+        if ocsp_status != "VALID":
+            print(f"  {Fore.CYAN}→ Enable OCSP stapling{Style.RESET_ALL}")
+        if not warnings:
+            print(f"  {Fore.GREEN}→ No action required. System secure.{Style.RESET_ALL}")
+    
+        print("\n" + "═" * shutil.get_terminal_size().columns)
+    
+    # Build report data
         data = {
+            "domain": domain,
             "subject": cert_obj.get_subject().CN,
             "valid_days": valid_days,
             "protocol": ssock.version(),
             "cipher": ssock.cipher()[0],
             "ocsp": ocsp_status,
             "risk_level": level,
-            "renewal_warning": renewal_warning,
+            "renewal_warning": valid_days < 60,
             "tls13": ssock.version() == "TLSv1.3",
             "scan_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-
-        # Certificate info
-        "certificate": {
-            "subject": {"CN": cert_obj.get_subject().CN},
-            "issuer": {"CN": cert_obj.get_issuer().CN},
-            "expires": cert_obj.get_notAfter().decode(),
-            "serial": str(cert_obj.get_serial_number()),
-            "signature": cert_obj.get_signature_algorithm().decode()
-        },
-
-        "security_profile": {
-            "tls13": ssock.version() == "TLSv1.3",
-            "ocsp": ocsp_status,
-            "forward_secrecy": "ECDHE" in ssock.cipher()[0]
+            "certificate": {
+                "subject": {"CN": cert_obj.get_subject().CN},
+                "issuer": {"CN": cert_obj.get_issuer().CN},
+                "expires": cert_obj.get_notAfter().decode(),
+                "serial": str(cert_obj.get_serial_number()),
+                "signature": cert_obj.get_signature_algorithm().decode()
+            },
+            "security_profile": {
+                "tls13": ssock.version() == "TLSv1.3",
+                "ocsp": ocsp_status,
+                "forward_secrecy": "ECDHE" in ssock.cipher()[0]
+            }
         }
-    }
-
-
-    # Stage 6: Defensive Recommendations
-        self._loading_animation("Generating Defense Recommendations", 10)
-
-        print("\n[ Recommendations ]")
-
-        if renewal_warning:
-            print("→ Renew SSL certificate immediately")
-
-        if not tls13_supported:
-            print("→ Upgrade server to support TLS 1.3")
-
-        if ocsp_status != "VALID":
-            print("→ Enable OCSP stapling")
-
-        if risk == 0:
-            print("→ No action required. System secure.")
-
-    # Stage 7: Export Prompt
-        choice = input("\nExport security report to file? (y/N): ").lower()
-
+    
+    # Export options
+        choice = input(f"\n{Fore.CYAN}Export security report to file? (y/N): {Style.RESET_ALL}").lower()
         if choice == "y":
             self._export_ssl_results(domain, ssock, cert_obj, chain)
-            
-        pdf_choice = input("Generate PDF compliance report? (y/N): ").lower()
-
+    
+        pdf_choice = input(f"{Fore.CYAN}Generate PDF compliance report? (y/N): {Style.RESET_ALL}").lower()
         if pdf_choice == "y":
             self._generate_pdf_report(data)
+
 
 
     def _check_ocsp(self, cert, issuer_cert):
         """Check OCSP revocation status"""
         try:
+            from cryptography.x509.oid import ExtensionOID
+            from cryptography.hazmat.backends import default_backend
+            from cryptography.x509 import load_pem_x509_certificate
             
-        
             cert = load_pem_x509_certificate(
                 OpenSSL.crypto.dump_certificate(OpenSSL.crypto.FILETYPE_PEM, cert)
             )
@@ -3595,7 +3818,6 @@ class SecurityTerminal:
         return clean
 
     # string bytes conversions===============
-
     def _clean_chain(self, chain):
         """Convert certificate chain bytes to strings"""
 
@@ -3638,8 +3860,6 @@ class SecurityTerminal:
 
         return cleaned
 
- 
-     
     def _generate_pdf_report(self, data, logo_path="icon.jpg", footer_logo_path="icon.jpg"):
     # Safely get all keys with defaults
         domain = data.get("domain", "unknown_domain")
@@ -3743,8 +3963,8 @@ class SecurityTerminal:
             scale_ratio = max_footer_width / footer_logo.imageWidth
             footer_logo.drawWidth = footer_logo.imageWidth * scale_ratio
             footer_logo.drawHeight = footer_logo.imageHeight * scale_ratio
-            footer_data.append([footer_logo, Paragraph("Prepared by: Spark Wilson Spink | DSTerminal Platform\n© Stark Expo Tech Exchange", normal)])
-            footer_table = RichTable(footer_data, colWidths=[60, page_width - 60 - doc.leftMargin - doc.rightMargin])
+            footer_data.append([footer_logo, Paragraph("AUTOGENERATED CERTIFICATE REPORT | DSTerminal Platform\n© Stark Expo Tech Exchange", normal)])
+            footer_table = Table(footer_data, colWidths=[60, page_width - 60 - doc.leftMargin - doc.rightMargin])
             footer_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE')]))
             elements.append(footer_table)
         else:
@@ -3758,7 +3978,7 @@ class SecurityTerminal:
 
     def _styled_table(self, data):
 
-        table = RichTable(data, colWidths=[180, 320])
+        table = Table(data, colWidths=[180, 320])
 
         style = TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), lightgrey),
@@ -3800,8 +4020,6 @@ class SecurityTerminal:
             recs.append("No critical risks detected. Maintain current security posture.")
 
         return recs
-
-
 # added animated effects for the ssl certificate checks================
     def _type_print(self, text, delay=0.02):
         """Cinematic typing effect"""
@@ -3811,22 +4029,42 @@ class SecurityTerminal:
             time.sleep(delay)
         print()
 
-    def _loading_animation(self, text, seconds=10):
-        """Animated progress loader"""
-        self._type_print(f"\n[+] {text}")
+    def _loading_animation(self, text, seconds=5):
+        """Cinematic hacking-style animated loader with glitch and progress effects"""
+    # Print main stage text centered
+        terminal_width = 80
+        print("\n" + text.center(terminal_width))
     
-        frames = ["⠋","⠙","⠹","⠸","⠼","⠴","⠦","⠧","⠇","⠏"]
+        spinner = ["⠋","⠙","⠹","⠸","⠼","⠴","⠦","⠧","⠇","⠏"]
         end_time = time.time() + seconds
         i = 0
-    
-        while time.time() < end_time:
-            sys.stdout.write(f"\r[{frames[i % len(frames)]}] Processing...")
-            sys.stdout.flush()
-            time.sleep(0.2)
-            i += 1
-    
-        print("\r[✓] Completed.            ")
 
+    # Build cinematic random messages
+        flickers = [
+            "[ACCESSING CERT DATA]", "[TLS HANDSHAKE INIT]", "[VALIDATING CHAIN]",
+            "[OCSP CHECK]", "[ASSESSING RISK]", "[GENERATING RECOMMENDATIONS]",
+            "[ANALYZING PROTOCOL]", "[CIPHER SCAN]", "[SIGNATURE VERIFY]"
+        ]
+
+        while time.time() < end_time:
+        # Glitchy flicker text
+            flicker_text = random.choice(flickers)
+        
+        # Animated spinner + sliding progress
+            bar_length = 30
+            progress = int(((time.time() % seconds) / seconds) * bar_length)
+            bar = "█" * progress + "-" * (bar_length - progress)
+
+        # Random colors
+            color = random.choice([Fore.GREEN, Fore.CYAN, Fore.MAGENTA, Fore.YELLOW])
+            sys.stdout.write(f"\r{color}{spinner[i % len(spinner)]} {bar} {flicker_text.center(40)}{Style.RESET_ALL}")
+            sys.stdout.flush()
+            time.sleep(0.1)
+            i += 1
+
+    # Finish with a completed checkmark
+        sys.stdout.write(f"\r{Fore.GREEN}[✓] {text} Completed{' ' * 40}{Style.RESET_ALL}\n")
+        sys.stdout.flush()
 
     def dump_memory(self):
         """Create a memory dump (requires admin)"""
@@ -4093,36 +4331,160 @@ class SecurityTerminal:
             return True
 
 # --------------------------for updates above code--------------------
-    def clear_terminal(self):
+    def clear_terminal_advanced(self):
+        """Advanced terminal clearing with spinning boxes and centered animations"""
         console = Console()
-
-        panel = Panel(
-            Align.center("[cyan]Resetting interface...[/cyan]", vertical="middle"),
-            title="[bold white]TERMINAL WIPE[/bold white]",
-            border_style="bright_cyan",
-            padding=(1, 2),
-            width=50
-        )
-
-        with Live(console=console, refresh_per_second=5, screen=True) as live:
-            for i in range(3):
-                live.update(panel)
-                time.sleep(0.5)
-
+        terminal_width = shutil.get_terminal_size((80, 20)).columns
+        panel_width = min(70, terminal_width - 10)
+    
+    # Multiple spinner types for variety
+        spinners = {
+            'dots': ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
+            'arrows': ["←", "↖", "↑", "↗", "→", "↘", "↓", "↙"],
+            'pipes': ["┤", "┘", "┴", "└", "├", "┌", "┬", "┐"],
+            'circles': ["◴", "◷", "◶", "◵"]
+        }
+    
+    # Glitch text fragments
+        glitch_texts = [
+            "CLEARING...", "WIPING...", "PURGING...", 
+            "RESETTING...", "REFRESHING...", "RELOADING..."
+        ]
+    
+    # Create a box with spinning animation
+        with Live(console=console, refresh_per_second=12, screen=True) as live:
+            for phase in range(4):  # 4 phases of clearing
+                for step in range(25):  # 25 steps per phase
+                    # Select spinner based on phase
+                    spinner_type = list(spinners.keys())[phase % len(spinners)]
+                    spinner = spinners[spinner_type][step % len(spinners[spinner_type])]
+                
+                # Phase-based colors
+                    if phase == 0:
+                        color = "bright_red"
+                        phase_text = "PHASE 1: MEMORY CLEAR"
+                    elif phase == 1:
+                        color = "bright_yellow"
+                        phase_text = "PHASE 2: BUFFER FLUSH"
+                    elif phase == 2:
+                        color = "bright_green"
+                        phase_text = "PHASE 3: CACHE WIPE"
+                    else:
+                        color = "bright_cyan"
+                        phase_text = "PHASE 4: DISPLAY RESET"
+                
+                # Progress calculation
+                    total_progress = (phase * 25 + step) / 100
+                    progress_bar_width = panel_width - 30
+                    progress_filled = int(total_progress * progress_bar_width)
+                    progress_bar = "█" * progress_filled + "░" * (progress_bar_width - progress_filled)
+                
+                # Random glitch effect
+                    if random.random() > 0.7:
+                        glitch = random.choice(glitch_texts)
+                    else:
+                        glitch = ""
+                
+                # Create main content with nested boxes
+                    main_content = Panel(
+                        Align.center(
+                            f"[bold {color}]{spinner} {phase_text} {spinner}[/bold {color}]\n\n"
+                            f"[white]{progress_bar}[/white] [{int(total_progress*100)}%]\n\n"
+                            f"[dim]{glitch}[/dim]",
+                            vertical="middle"
+                        ),
+                        title=f"[bold {color}]╔ TERMINAL WIPE SEQUENCE ╗[/bold {color}]",
+                        border_style=color,
+                        padding=(1, 2),
+                        width=panel_width
+                    )
+                
+                # Add a secondary box for system stats
+                    stats_box = Panel(
+                        Align.center(
+                            f"[cyan]CPU: [green]{random.randint(20, 95)}%[/green]\n"
+                            f"[cyan]MEM: [yellow]{random.randint(100, 500)}MB[/yellow]\n"
+                            f"[cyan]PID: [white]{os.getpid()}[/white]",
+                            vertical="middle"
+                        ),
+                        title="[bold white]SYS STATS[/bold white]",
+                        border_style="bright_black",
+                        width=panel_width - 4
+                    )
+                
+                # Combine both panels
+                    final_display = Align.center(
+                        Group(
+                            main_content,
+                            Spacer(1),
+                            stats_box
+                        )
+                    )
+                
+                    live.update(final_display)
+                    time.sleep(0.05)
+    
+    # Execute actual terminal clear
         os.system("clear" if platform.system() != "Windows" else "cls")
-
+    
+    # Create a dramatic banner reveal
         banner = """
-        ╔═══════════════════════════════════════════════════════════════════============═══╗
-            ██████╗ ███████╗███████╗███████╗███╗   ██╗███████╗██╗  ██╗
-            ██╔══██╗██╔════╝██╔════╝██╔════╝████╗  ██║██╔════╝╚██╗██╔╝
-            ██║  ██║█████╗  █████╗  █████╗  ██╔██╗ ██║█████╗   ╚███╔╝ 
-            ██║  ██║██╔══╝  ██╔══╝  ██╔══╝  ██║╚██╗██║██╔══╝   ██╔██╗ 
-            ██████╔╝██║     ██║     ███████╗██║ ╚████║███████╗██╔╝ ██╗
-            ╚═════╝ ╚═╝     ╚═╝     ╚══════╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝
-        ╚════════════════════════════════════════════════════════════════════============══╝
+        ╔═══════════════════════════════════════════════════════════════════╗
+        ║                                                                    ║
+        ║    ██████╗ ███████╗███████╗███████╗███╗   ██╗███████╗██╗  ██╗    ║
+        ║    ██╔══██╗██╔════╝██╔════╝██╔════╝████╗  ██║██╔════╝╚██╗██╔╝    ║
+        ║    ██║  ██║█████╗  █████╗  █████╗  ██╔██╗ ██║█████╗   ╚███╔╝     ║
+        ║    ██║  ██║██╔══╝  ██╔══╝  ██╔══╝  ██║╚██╗██║██╔══╝   ██╔██╗     ║
+        ║    ██████╔╝██║     ██║     ███████╗██║ ╚████║███████╗██╔╝ ██╗    ║
+        ║    ╚═════╝ ╚═╝     ╚═╝     ╚══════╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝    ║
+        ║                                                                    ║
+        ╚═══════════════════════════════════════════════════════════════════╝
         """
-        console.print(f"[bold cyan]{banner}[/bold cyan]")
- 
+    
+    # Animate banner with scan line effect
+        banner_lines = banner.split('\n')
+        centered_banner = []
+    
+    # Center each line
+        for line in banner_lines:
+            if line.strip():
+                centered_banner.append(line.center(terminal_width))
+            else:
+                centered_banner.append('')
+    
+    # Display with scan line animation
+        for i, line in enumerate(centered_banner):
+            if i == 0 or i == len(centered_banner)-1:
+                console.print(f"[bright_cyan]{line}[/bright_cyan]")
+            elif i == 1 or i == 7:
+                console.print(f"[bright_blue]{line}[/bright_blue]")
+            elif 2 <= i <= 6:
+            # Gradient effect on logo
+                colors = ["cyan", "bright_cyan", "blue", "bright_blue", "green"]
+                color = colors[(i-2) % len(colors)]
+                console.print(f"[bold {color}]{line}[/bold {color}]")
+            else:
+                console.print(f"[dim]{line}[/dim]")
+            time.sleep(0.03)
+    
+    # Add a status message with blink effect
+        status_panel = Panel(
+            Align.center(
+                "[blink][bright_green]✦ SYSTEM INITIALIZED ✦[/bright_green][/blink]\n\n"
+                f"[cyan]Session ID:[/cyan] [white]{datetime.now().strftime('%Y%m%d%H%M%S')}[/white]\n"
+                f"[cyan]Ready for:[/cyan] [yellow]SSL/TLS Security Audit[/yellow]",
+                vertical="middle"
+            ),
+            title="[bold white]SYSTEM STATUS[/bold white]",
+            border_style="bright_green",
+            padding=(1, 2),
+            width=panel_width
+        )
+    
+        console.print(Align.center(status_panel))
+        print()  # Extra newline for spacing
+
+    # =======ends here from above-==============
     def emergency_shutdown(self):
         console = Console()
 
@@ -4973,6 +5335,23 @@ class SecurityTerminal:
             self.handle_crypto_verify(args)
         elif cmd == "crypto-backup":
             self.handle_crypto_backup(args)
+
+        elif cmd == "recon":
+            if len(args) == 0:
+                print("Usage: recon <target> OR recon -full <target>")
+                return
+
+            if args[0] == "-full":
+                if len(args) < 2:
+                    print("Usage: recon -full <target>")
+                    return
+                target = args[1]
+                os.system(f"{sys.executable} recon_full.py {target}")
+            else:
+                target = args[0]
+                os.system(f"{sys.executable} recon.py {target}")
+            return
+
         elif cmd == "encrypt-test":
             self.handle_encrypt_test(args)
 

@@ -1,0 +1,39 @@
+{
+  "domain": "unima.ac.mw",
+  "scan_time": "2026-03-07T15:04:23.962632",
+  "protocol": "TLSv1.2",
+  "cipher": "ECDHE-RSA-AES256-GCM-SHA384",
+  "certificate": {
+    "subject": {
+      "CN": "unima.ac.mw"
+    },
+    "issuer": {
+      "C": "US",
+      "O": "Let's Encrypt",
+      "CN": "R13"
+    },
+    "expires": "20260404050420Z",
+    "serial": "539921559169882821961580531330170647270559",
+    "signature": "sha256WithRSAEncryption"
+  },
+  "chain": [
+    {
+      "subject": {
+        "CN": "unima.ac.mw"
+      },
+      "issuer": {
+        "C": "US",
+        "O": "Let's Encrypt",
+        "CN": "R13"
+      },
+      "expires": "20260404050420Z",
+      "serial": 539921559169882821961580531330170647270559,
+      "version": 3
+    }
+  ],
+  "security_profile": {
+    "tls13": false,
+    "ocsp": "checked",
+    "forward_secrecy": true
+  }
+}

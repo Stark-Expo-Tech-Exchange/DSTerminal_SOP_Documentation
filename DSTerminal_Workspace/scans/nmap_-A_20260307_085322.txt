@@ -1,2 +1,0 @@
-# Nmap 7.98 scan initiated Sat Mar  7 08:53:23 2026 as: nmap -A -oN C:\\Users\\stark\\Downloads\\DSTerminal_releases_latest-master\\DSTerminal_releases_latest-master\\DSTerminal_Workspace\\scans\\nmap_-A_20260307_085322.txt unima.ac.mw
-# Nmap done at Sat Mar  7 08:53:29 2026 -- 1 IP address (0 hosts up) scanned in 6.63 seconds
