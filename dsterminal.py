@@ -4435,7 +4435,7 @@ class SecurityTerminal:
                     final_display = Align.center(layout)
                 
                     live.update(final_display)
-                    time.sleep(0.05)
+                    time.sleep(1.05)
     
     # Execute actual terminal clear
         os.system("clear" if platform.system() != "Windows" else "cls")
@@ -4478,7 +4478,7 @@ class SecurityTerminal:
                 console.print(f"[bold {color}]{line}[/bold {color}]")
             else:
                 console.print(f"[dim]{line}[/dim]")
-            time.sleep(0.03)
+            time.sleep(0.5)
     
     # Add a status message with blink effect
         status_panel = Panel(
@@ -5601,93 +5601,538 @@ class SecurityTerminal:
             self.show_tip(cmd)  # <-- Add this line at the end
 
     # ==================== HELP MENU ====================
-    def show_help(self):
-        help_text = """
-                    _____________DSTerminal Commands Help Menu______________:
+    # def show_help(self):
+    #     help_text = """
+    #                 _____________DSTerminal Commands Help Menu______________:
     
-    === Core Security ========
-    system scan -All                              - System threat scan (sys, apps, net e.t.c)
-    net -n mon                                          - Live network monitoring
-    exploitcheck                                        - Check for critical CVEs
-    vtscan                                              - VirusTotal file analysis
-    clearlogs                                           - Securely wipe system logs
-    nikto --url <TARGET>                                - Web vulnerability scan")
-    legitify --github <ORG/REPO>                        - Scan GitHub for misconfigurations")
+    # === Core Security ========
+    # system scan -All                              - System threat scan (sys, apps, net e.t.c)
+    # net -n mon                                          - Live network monitoring
+    # exploitcheck                                        - Check for critical CVEs
+    # vtscan                                              - VirusTotal file analysis
+    # clearlogs                                           - Securely wipe system logs
+    # nikto --url <TARGET>                                - Web vulnerability scan")
+    # legitify --github <ORG/REPO>                        - Scan GitHub for misconfigurations")
 
-    === Network Tools ========
-    portsweep [IP]                                      - Scan target for open ports
-    traceroute [IP]                                     - Network path analysis
-    torify                                              - Route traffic through Tor
-    dnssec [DOMAIN]                                     - Validate DNSSEC
+    # === Network Tools ========
+    # portsweep [IP]                                      - Scan target for open ports
+    # traceroute [IP]                                     - Network path analysis
+    # torify                                              - Route traffic through Tor
+    # dnssec [DOMAIN]                                     - Validate DNSSEC
     
-    === Forensics & Financial Crime Analysis ============
-    memdump                       - Capture volatile memory (for analysis)
-    hashfile [PATH]               - Generate file integrity hashes
-    stegcheck [IMG]               - Detect hidden or embedded image data
-    ransomwatch                   - Identify ransomware indicators
-    finanalyze                    - Analyze suspicious financial transactions
-    transfertrace                 - Trace and simulate transaction flows
+    # === Forensics & Financial Crime Analysis ============
+    # memdump                       - Capture volatile memory (for analysis)
+    # hashfile [PATH]               - Generate file integrity hashes
+    # stegcheck [IMG]               - Detect hidden or embedded image data
+    # ransomwatch                   - Identify ransomware indicators
+    # finanalyze                    - Analyze suspicious financial transactions
+    # transfertrace                 - Trace and simulate transaction flows
      
-    === System Management ====
-    sysinfo                                             - Detailed system report
-    killproc PID                                        - Terminate process
-    macspoof [IFACE]                                    - Randomize MAC address
-    harden -t sys                                       - Apply security hardening
+    # === System Management ====
+    # sysinfo                                             - Detailed system report
+    # killproc PID                                        - Terminate process
+    # macspoof [IFACE]                                    - Randomize MAC address
+    # harden -t sys                                       - Apply security hardening
     
-    ===  Cryptography (Crypto Tools) ===
-    encrypt FILE                                        - AES-256 file encryption
-    decrypt FILE KEY                                    - File decryption
+    # ===  Cryptography (Crypto Tools) ===
+    # encrypt FILE                                        - AES-256 file encryption
+    # decrypt FILE KEY                                    - File decryption
     
-    === Web Security ========
-    sqlmap [URL]                                        - SQL injection scan
-                                                        - "-u", url,
-                                                        - "--batch",  # Non-interactive
-                                                        - "--risk=3",  # Higher risk level
-                                                        - "--level=5",  # Thorough testing
-                                                        - "--crawl=1",  # Limited crawling
-                                                        - "--random-agent",
-                                                        - "--output-dir=./sqlmap_results"
+    # === Web Security ========
+    # sqlmap [URL]                                        - SQL injection scan
+    #                                                     - "-u", url,
+    #                                                     - "--batch",  # Non-interactive
+    #                                                     - "--risk=3",  # Higher risk level
+    #                                                     - "--level=5",  # Thorough testing
+    #                                                     - "--crawl=1",  # Limited crawling
+    #                                                     - "--random-agent",
+    #                                                     - "--output-dir=./sqlmap_results"
 
-    certcheck [DOMAIN]                                  - SSL certificate audit
+    # certcheck [DOMAIN]                                  - SSL certificate audit
     
-    === Monitoring ==========
-    watchfolder [PATH]                                  - Directory change detection
-    regmon                                              - Windows registry monitor
+    # === Monitoring ==========
+    # watchfolder [PATH]                                  - Directory change detection
+    # regmon                                              - Windows registry monitor
     
-    === Utilities ===========
-    update                                              - Check for DST updates
-    help                                                - Show this menu
-    exit                                                - Quit terminal
-    clear                                               - Cleaning up your terminal previous commands
-    clear terminal                                      - Cleaning up your terminal history commands
-    shutdown                                            - Emergency shutting down
-    shutdown now                                        - To shutdown your machine immediately
+    # === Utilities ===========
+    # update                                              - Check for DST updates
+    # help                                                - Show this menu
+    # exit                                                - Quit terminal
+    # clear                                               - Cleaning up your terminal previous commands
+    # clear terminal                                      - Cleaning up your terminal history commands
+    # shutdown                                            - Emergency shutting down
+    # shutdown now                                        - To shutdown your machine immediately
 
-    ===🔐 ENCRYPTION COMMANDS:
-    encrypt <file>                                      - Encrypt a file
-    decrypt <file.enc>                                  - Decrypt a file
-    crypto-list                                         - List all encrypted files
-    crypto-info <file.enc>                              - Show encryption info
-    crypto-verify                                       - Verify encryption system
-    crypto-backup                                       - Backup encryption key
-    encrypt-test                                        - Run encryption test
-    encrypt-setup                                       - Setup encryption system
+    # ===🔐 ENCRYPTION COMMANDS:
+    # encrypt <file>                                      - Encrypt a file
+    # decrypt <file.enc>                                  - Decrypt a file
+    # crypto-list                                         - List all encrypted files
+    # crypto-info <file.enc>                              - Show encryption info
+    # crypto-verify                                       - Verify encryption system
+    # crypto-backup                                       - Backup encryption key
+    # encrypt-test                                        - Run encryption test
+    # encrypt-setup                                       - Setup encryption system
   
-    ===📁 FILE COMMANDS:
-    ls                                                  - List files
-    cat <file>                                          - Show file contents
-    touch <file>                                        - Create file
-    echo <text> > <file>                                - Write to file
-    pwd                                                 - Show current directory
+    # ===📁 FILE COMMANDS:
+    # ls                                                  - List files
+    # cat <file>                                          - Show file contents
+    # touch <file>                                        - Create file
+    # echo <text> > <file>                                - Write to file
+    # pwd                                                 - Show current directory
   
-    ⚡ SECURITY COMMANDS:
-    sysinfo                                             - System information
-    metasploit                                          - Launch Metasploit
-    tor-start                                           - Start Tor proxy
-    tor-check                                           - Check Tor connection
-    """
-        print(help_text)
+    # ⚡ SECURITY COMMANDS:
+    # sysinfo                                             - System information
+    # metasploit                                          - Launch Metasploit
+    # tor-start                                           - Start Tor proxy
+    # tor-check                                           - Check Tor connection
+    # """
+    #     print(help_text)
 
+# ==================== HELP MENU ====================
+    # def show_help(self):
+    #     """Display interactive hacking-styled help menu with categories"""
+    
+    # # Clear screen and show loading animation
+    #     self._cinematic_box("LOADING COMMAND DATABASE", seconds=2)
+    
+    #     terminal_width = shutil.get_terminal_size((80, 20)).columns
+    
+    # # Help menu categories with commands
+    #     categories = {
+    #         "🔥 CORE SECURITY": [
+    #             ("system scan -All", "System threat scan (sys, apps, net)"),
+    #             ("net -n mon", "Live network monitoring"),
+    #             ("exploitcheck", "Check for critical CVEs"),
+    #             ("vtscan", "VirusTotal file analysis"),
+    #             ("clearlogs", "Securely wipe system logs"),
+    #             ("nikto --url <TARGET>", "Web vulnerability scan"),
+    #             ("legitify --github <ORG/REPO>", "Scan GitHub for misconfigs")
+    #         ],
+        
+    #         "🌐 NETWORK TOOLS": [
+    #             ("portsweep [IP]", "Scan target for open ports"),
+    #             ("traceroute [IP]", "Network path analysis"),
+    #             ("torify", "Route traffic through Tor"),
+    #             ("dnssec [DOMAIN]", "Validate DNSSEC")
+    #         ],
+        
+    #         "🔍 FORENSICS & FINANCIAL": [
+    #             ("memdump", "Capture volatile memory"),
+    #             ("hashfile [PATH]", "Generate file integrity hashes"),
+    #             ("stegcheck [IMG]", "Detect hidden image data"),
+    #             ("ransomwatch", "Identify ransomware indicators"),
+    #             ("finanalyze", "Analyze suspicious transactions"),
+    #             ("transfertrace", "Trace transaction flows")
+    #         ],
+        
+    #         "⚙️ SYSTEM MANAGEMENT": [
+    #             ("sysinfo", "Detailed system report"),
+    #             ("killproc PID", "Terminate process"),
+    #             ("macspoof [IFACE]", "Randomize MAC address"),
+    #             ("harden -t sys", "Apply security hardening"),
+    #             ("update", "Check for DST updates"),
+    #             ("shutdown", "Emergency shutdown"),
+    #             ("shutdown now", "Immediate machine shutdown")
+    #         ],
+        
+    #         "🔐 CRYPTO TOOLS": [
+    #             ("encrypt FILE", "AES-256 file encryption"),
+    #             ("decrypt FILE KEY", "File decryption"),
+    #             ("crypto-list", "List encrypted files"),
+    #             ("crypto-info <file.enc>", "Show encryption info"),
+    #             ("crypto-verify", "Verify encryption system"),
+    #             ("crypto-backup", "Backup encryption key"),
+    #             ("encrypt-test", "Run encryption test"),
+    #             ("encrypt-setup", "Setup encryption system")
+    #         ],
+        
+    #         "🌍 WEB SECURITY": [
+    #             ("sqlmap [URL]", "SQL injection scan"),
+    #             ("certcheck [DOMAIN]", "SSL certificate audit")
+    #         ],
+        
+    #         "📊 MONITORING": [
+    #             ("watchfolder [PATH]", "Directory change detection"),
+    #             ("regmon", "Windows registry monitor")
+    #         ],
+        
+    #         "📁 FILE COMMANDS": [
+    #             ("ls", "List files"),
+    #             ("cat <file>", "Show file contents"),
+    #             ("touch <file>", "Create file"),
+    #             ("echo <text> > <file>", "Write to file"),
+    #             ("pwd", "Show current directory")
+    #         ],
+        
+    #         "🛠️ UTILITIES": [
+    #             ("help", "Show this menu"),
+    #             ("exit", "Quit terminal"),
+    #             ("clear", "Clear terminal display"),
+    #             ("clear terminal", "Clear terminal history")
+    #         ]
+    #     }
+    
+    # # Create header with glitch effect
+    #     header = f"""
+    # {Fore.RED}╔{'═' * (terminal_width-2)}╗{Style.RESET_ALL}
+    # {Fore.RED}║{Fore.CYAN}{'DSTerminal v3.0 - Command Reference Manual'.center(terminal_width-2)}{Fore.RED}║{Style.RESET_ALL}
+    # {Fore.RED}║{Fore.YELLOW}{'INTERACTIVE COMMAND MENU'.center(terminal_width-2)}{Fore.RED}║{Style.RESET_ALL}
+    # {Fore.RED}╠{'═' * (terminal_width-2)}╣{Style.RESET_ALL}"""
+    
+    #     print(header)
+    
+    # # Display each category in a colored box
+    #     for category, commands in categories.items():
+    #     # Random color for each category
+    #         cat_colors = [Fore.CYAN, Fore.GREEN, Fore.YELLOW, Fore.MAGENTA, Fore.BLUE, Fore.RED]
+    #         cat_color = random.choice(cat_colors)
+        
+    #     # Category header with blinking effect for important ones
+    #         if "CORE" in category or "SECURITY" in category:
+    #             blink = self.blink
+    #         else:
+    #             blink = ""
+        
+    #         print(f"\n{cat_color}┌─{blink}{category}{self.blink_off}{'─' * (terminal_width- len(category)- 6)}{cat_color}┐{Style.RESET_ALL}")
+        
+    #     # Display commands in two columns for better readability
+    #         mid_point = len(commands) // 2 + len(commands) % 2
+        
+    #         for i in range(mid_point):
+    #             left_idx = i
+    #             right_idx = i + mid_point
+            
+    #             left_cmd, left_desc = commands[left_idx]
+            
+    #         # Color code commands based on risk/type
+    #             if "scan" in left_cmd or "exploit" in left_cmd:
+    #                 cmd_color = Fore.RED
+    #             elif "encrypt" in left_cmd or "crypto" in left_cmd:
+    #                 cmd_color = Fore.MAGENTA
+    #             elif "net" in left_cmd or "portsweep" in left_cmd:
+    #                 cmd_color = Fore.CYAN
+    #             else:
+    #                 cmd_color = Fore.GREEN
+            
+    #         # Format left column
+    #             left_line = f"{cat_color}│{Style.RESET_ALL} {cmd_color}{left_cmd:<25}{Style.RESET_ALL} {Fore.WHITE}{left_desc:<35}{Style.RESET_ALL}"
+            
+    #         # Format right column if exists
+    #             if right_idx < len(commands):
+    #                 right_cmd, right_desc = commands[right_idx]
+                
+    #                 if "scan" in right_cmd or "exploit" in right_cmd:
+    #                     r_cmd_color = Fore.RED
+    #                 elif "encrypt" in right_cmd or "crypto" in right_cmd:
+    #                     r_cmd_color = Fore.MAGENTA
+    #                 elif "net" in right_cmd or "portsweep" in right_cmd:
+    #                     r_cmd_color = Fore.CYAN
+    #                 else:
+    #                     r_cmd_color = Fore.GREEN
+                
+    #                 right_line = f" {r_cmd_color}{right_cmd:<25}{Style.RESET_ALL} {Fore.WHITE}{right_desc:<35}{Style.RESET_ALL}"
+    #             else:
+    #                 right_line = ""
+            
+    #         # Print the combined line with typing effect for first few commands
+    #             if i < 3:  # Typing effect for first 3 commands
+    #                 for char in left_line + right_line:
+    #                     print(char, end='', flush=True)
+    #                     time.sleep(0.001)
+    #                 print()
+    #             else:
+    #                 print(left_line + right_line)
+        
+    #     # Category footer with random matrix line
+    #         matrix_line = "".join(random.choice("01") for _ in range(terminal_width-20))
+    #         print(f"{cat_color}└─{Fore.GREEN}{matrix_line[:terminal_width-30]}{cat_color}─┘{Style.RESET_ALL}")
+    #         time.sleep(0.3)  # Pause between categories
+    
+    # # Footer with interactive elements
+    #     print(f"\n{Fore.RED}╠{'═' * (terminal_width-2)}╣{Style.RESET_ALL}")
+    
+    # # Interactive search prompt
+    #     print(f"{Fore.RED}║{Fore.YELLOW} 🔍 SEARCH COMMANDS: [Type command name or 'exit' to close]{Fore.RED} ║{Style.RESET_ALL}")
+    #     print(f"{Fore.RED}╠{'═' * (terminal_width-2)}╣{Style.RESET_ALL}")
+    
+    # # Quick tips in a matrix-style panel
+    #     tips = [
+    #         ("💡 TIP:", "Use Tab for command completion"),
+    #         ("⚡ PRO:", "Combine commands with '&&'"),
+    #         ("🔧 DEV:", "Check /var/log/dsterminal for logs"),
+    #         ("🌐 WEB:", "Access web interface at http://localhost:8080")
+    #     ]
+    
+    #     for icon, tip in tips:
+    #         color = random.choice([Fore.CYAN, Fore.GREEN, Fore.YELLOW])
+    #         print(f"{Fore.RED}║{Style.RESET_ALL} {color}{icon}{Style.RESET_ALL} {Fore.WHITE}{tip:<{terminal_width-15}}{Fore.RED}║{Style.RESET_ALL}")
+    
+    #     print(f"{Fore.RED}╚{'═' * (terminal_width-2)}╝{Style.RESET_ALL}")
+    
+    # # Interactive command search
+    #     while True:
+    #         print(f"\n{Fore.CYAN}┌─[{Fore.GREEN}HELP{Fore.CYAN}]─[{Fore.YELLOW}search{Fore.CYAN}]")
+    #         search = input(f"{Fore.CYAN}└─$ {Style.RESET_ALL}").strip().lower()
+        
+    #         if search == "exit" or search == "q":
+    #             break
+        
+    #         if search:
+    #             found = False
+    #             print(f"\n{Fore.YELLOW}🔍 Search results for '{search}':{Style.RESET_ALL}")
+    #             print(f"{Fore.CYAN}{'─' * 50}{Style.RESET_ALL}")
+            
+    #         # Search through all commands
+    #             for category, commands in categories.items():
+    #                 for cmd, desc in commands:
+    #                     if search in cmd.lower() or search in desc.lower():
+    #                         found = True
+    #                         print(f"{Fore.GREEN}✓ {cmd:<25}{Style.RESET_ALL} {Fore.WHITE}{desc}{Style.RESET_ALL}")
+            
+    #             if not found:
+    #                 print(f"{Fore.RED}✗ No commands found matching '{search}'{Style.RESET_ALL}")
+            
+    #             print(f"{Fore.CYAN}{'─' * 50}{Style.RESET_ALL}")
+    
+    # # Exit animation
+    #     self._type_print(f"{Fore.GREEN}[✓] Help system initialized{Style.RESET_ALL}")
+
+
+# ==================== HELP MENU ====================
+    def show_help(self):
+        """Display interactive hacking-styled help menu with categories"""
+    
+    # Define blink sequences if not already defined in class
+        blink_on = "\033[5m"
+        blink_off = "\033[25m"
+    
+    # Clear screen and show loading animation
+        self._cinematic_box("LOADING COMMAND DATABASE", seconds=2)
+    
+        terminal_width = shutil.get_terminal_size((80, 20)).columns
+    
+    # Help menu categories with commands
+        categories = {
+            "🔥 CORE SECURITY": [
+                ("system scan -All", "System threat scan (sys, apps, net)"),
+                ("net -n mon", "Live network monitoring"),
+                ("exploitcheck", "Check for critical CVEs"),
+                ("vtscan", "VirusTotal file analysis"),
+                ("clearlogs", "Securely wipe system logs"),
+                ("nikto --url <TARGET>", "Web vulnerability scan"),
+                ("legitify --github <ORG/REPO>", "Scan GitHub for misconfigs"),
+                ("msfconsole", "Launch Metasploit Framework console"),
+                ("msf -h", "Metasploit help and options"),
+                ("nmap -sV <TARGET>", "Service/version detection scan"),
+                ("nmap -A <TARGET>", "Aggressive OS and service detection"),
+                ("nmap -p- <TARGET>", "Scan all 65535 ports"),
+                ("nmap scan <TARGET>", "Nmap scan the target")
+            ],
+        
+            "🌐 NETWORK TOOLS": [
+                ("portsweep [IP]", "Scan target for open ports"),
+                ("traceroute [IP]", "Network path analysis"),
+                ("torify", "Route traffic through Tor"),
+                ("dnssec [DOMAIN]", "Validate DNSSEC"),
+                ("nmap <TARGET>", "Basic port scan"),
+                ("nmap -sS <TARGET>", "Stealth SYN scan"),
+                ("nmap -sU <TARGET>", "UDP port scan"),
+                ("nmap -O <TARGET>", "OS fingerprinting"),
+                ("msfvenom", "Generate payloads for exploits"),
+                ("msfdb", "Manage Metasploit database"),
+                ("msfconsole", "Launch Metasploit Framework console")
+            ],
+        
+            "🔍 FORENSICS & FINANCIAL": [
+                ("memdump", "Capture volatile memory"),
+                ("hashfile [PATH]", "Generate file integrity hashes"),
+                ("stegcheck [IMG]", "Detect hidden image data"),
+                ("ransomwatch", "Identify ransomware indicators"),
+                ("finanalyze", "Analyze suspicious transactions"),
+                ("transfertrace", "Trace transaction flows"),
+                ("recon", "Run comprehensive information reconnaissance scan"),
+                ("recon -full", "Run full recon with additional checks")
+            ],
+        
+            "⚙️ SYSTEM MANAGEMENT": [
+                ("sysinfo", "Detailed system report"),
+                ("killproc PID", "Terminate process"),
+                ("macspoof [IFACE]", "Randomize MAC address"),
+                ("harden -t sys", "Apply security hardening"),
+                ("update", "Check for DST updates"),
+                ("shutdown", "Emergency shutdown"),
+                ("shutdown now", "Immediate machine shutdown")
+            ],
+        
+            "🔐 CRYPTO TOOLS": [
+                ("encrypt FILE", "AES-256 file encryption"),
+                ("decrypt FILE KEY", "File decryption"),
+                ("crypto-list", "List encrypted files"),
+                ("crypto-info <file.enc>", "Show encryption info"),
+                ("crypto-verify", "Verify encryption system"),
+                ("crypto-backup", "Backup encryption key"),
+                ("encrypt-test", "Run encryption test"),
+                ("encrypt-setup", "Setup encryption system")
+            ],
+        
+            "🌍 WEB SECURITY": [
+                ("sqlmap [URL]", "SQL injection scan"),
+                ("certcheck [DOMAIN]", "SSL certificate audit"),
+                ("nmap --script vuln <TARGET>", "Vulnerability scan with NSE"),
+                ("nmap --script http-* <TARGET>", "HTTP service enumeration"),
+                ("msfconsole -q", "Launch Metasploit quietly"),
+                ("msf > search <exploit>", "Search exploits in Metasploit"),
+                ("msf > use <exploit>", "Use specific exploit module"),
+                ("msf > set RHOSTS <IP>", "Set target in Metasploit"),
+                ("msf > run/exploit", "Execute Metasploit module")
+            ],
+        
+            "📊 MONITORING": [
+                ("watchfolder [PATH]", "Directory change detection"),
+                ("regmon", "Windows registry monitor")
+            ],
+        
+            "📁 FILE COMMANDS": [
+                ("ls", "List files"),
+                ("cat <file>", "Show file contents"),
+                ("touch <file>", "Create file"),
+                ("echo <text> > <file>", "Write to file"),
+                ("pwd", "Show current directory")
+            ],
+        
+            "🛠️ UTILITIES": [
+                ("help", "Show this menu"),
+                ("exit", "Quit terminal"),
+                ("clear", "Clear terminal display"),
+                ("clear terminal", "Clear terminal history")
+            ]
+        }
+    
+    # Create header
+        print(f"\n{Fore.RED}╔{'═' * (terminal_width-2)}╗{Style.RESET_ALL}")
+        print(f"{Fore.RED}║{Fore.CYAN}{'DSTerminal v2.0.59 - Command Reference Manual'.center(terminal_width-2)}{Fore.RED}║{Style.RESET_ALL}")
+        print(f"{Fore.RED}║{Fore.YELLOW}{'INTERACTIVE COMMAND MENU'.center(terminal_width-2)}{Fore.RED}║{Style.RESET_ALL}")
+        print(f"{Fore.RED}╠{'═' * (terminal_width-2)}╣{Style.RESET_ALL}")
+    
+    # Display each category
+        for category, commands in categories.items():
+        # Random color for each category
+            cat_colors = [Fore.CYAN, Fore.GREEN, Fore.YELLOW, Fore.MAGENTA, Fore.BLUE, Fore.RED]
+            cat_color = random.choice(cat_colors)
+        
+        # Category header with blinking for important ones
+            if "CORE" in category or "SECURITY" in category:
+                print(f"\n{cat_color}┌─{blink_on}{category}{blink_off}{'─' * (terminal_width - len(category) - 6)}{cat_color}┐{Style.RESET_ALL}")
+            else:
+                print(f"\n{cat_color}┌─{category}{'─' * (terminal_width - len(category) - 5)}{cat_color}┐{Style.RESET_ALL}")
+        
+        # Display commands
+            for cmd, desc in commands:
+            # Color code commands based on type
+                if "scan" in cmd or "exploit" in cmd or "nikto" in cmd:
+                    cmd_color = Fore.RED
+                elif "encrypt" in cmd or "crypto" in cmd or "decrypt" in cmd:
+                    cmd_color = Fore.MAGENTA
+                elif "net" in cmd or "portsweep" in cmd or "traceroute" in cmd:
+                    cmd_color = Fore.CYAN
+                elif "sqlmap" in cmd or "certcheck" in cmd:
+                    cmd_color = Fore.YELLOW
+                elif "ls" in cmd or "cat" in cmd or "touch" in cmd:
+                    cmd_color = Fore.BLUE
+
+                # In the command display loop, add these conditions:
+                elif "msf" in cmd or "metasploit" in cmd or "msfconsole" in cmd:
+                    cmd_color = Fore.RED + Style.BRIGHT  # Metasploit in bright red
+                elif "nmap" in cmd:
+                    cmd_color = Fore.YELLOW + Style.BRIGHT  # Nmap in bright yellow
+                elif "scan" in cmd or "exploit" in cmd or "nikto" in cmd:
+                    cmd_color = Fore.RED
+                elif "encrypt" in cmd or "crypto" in cmd or "decrypt" in cmd:
+                    cmd_color = Fore.MAGENTA
+                elif "net" in cmd or "portsweep" in cmd or "traceroute" in cmd:
+                    cmd_color = Fore.CYAN
+                elif "sqlmap" in cmd or "certcheck" in cmd:
+                    cmd_color = Fore.YELLOW
+                elif "ls" in cmd or "cat" in cmd or "touch" in cmd:
+                    cmd_color = Fore.BLUE   
+                elif "recon" in cmd or "enum" in cmd:
+                    cmd_color = Fore.GREEN + Style.BRIGHT  # Recon commands in bright green
+                else:
+                    cmd_color = Fore.GREEN
+            
+            # Format the line with proper spacing
+                line = f"{cat_color}│{Style.RESET_ALL} {cmd_color}{cmd:<30}{Style.RESET_ALL} {Fore.WHITE}{desc:<{terminal_width-45}}{Style.RESET_ALL}{cat_color}│{Style.RESET_ALL}"
+                print(line[:terminal_width])
+                time.sleep(1.01)  # Slight typing effect
+        
+        # Category footer
+            print(f"{cat_color}└{'─' * (terminal_width-2)}┘{Style.RESET_ALL}")
+            time.sleep(0.2)
+    
+    # Footer with tips
+        print(f"\n{Fore.RED}╠{'═' * (terminal_width-2)}╣{Style.RESET_ALL}")
+    
+        tips = [
+            ("💡 TIP:", "Use Tab for command completion", Fore.CYAN),
+            ("⚡ PRO:", "Combine commands with '&&'", Fore.GREEN),
+            ("🔧 DEV:", "Check /var/log/dsterminal for logs", Fore.YELLOW),
+            ("🌐 WEB:", "Access web interface at http://localhost:8080", Fore.MAGENTA)
+        ]
+    
+        for icon, tip, color in tips:
+            print(f"{Fore.RED}║{Style.RESET_ALL} {color}{icon}{Style.RESET_ALL} {Fore.WHITE}{tip:<{terminal_width-20}}{Fore.RED}║{Style.RESET_ALL}")
+    
+        print(f"{Fore.RED}╚{'═' * (terminal_width-2)}╝{Style.RESET_ALL}")
+    
+    # Interactive command search
+        print(f"\n{Fore.CYAN}┌─[{Fore.GREEN}HELP{Fore.CYAN}]─[{Fore.YELLOW}type 'search' to find commands or 'exit' to quit{Fore.CYAN}]")
+    
+        while True:
+            search = input(f"{Fore.CYAN}└─$ {Style.RESET_ALL}").strip().lower()
+        
+            if search == "exit" or search == "q" or search == "":
+                break
+        
+            if search == "search":
+                print(f"\n{Fore.YELLOW}Enter search term: {Style.RESET_ALL}", end="")
+                term = input().strip().lower()
+            
+                if term:
+                    found = False
+                    print(f"\n{Fore.GREEN}🔍 Search results for '{term}':{Style.RESET_ALL}")
+                    print(f"{Fore.CYAN}{'─' * 60}{Style.RESET_ALL}")
+                
+                # Search through all commands
+                    for category, commands in categories.items():
+                        for cmd, desc in commands:
+                            if term in cmd.lower() or term in desc.lower():
+                                found = True
+                            # Color code based on match
+                                if term in cmd.lower():
+                                    match_color = Fore.YELLOW
+                                else:
+                                    match_color = Fore.WHITE
+                                print(f"{Fore.GREEN}✓{Style.RESET_ALL} {match_color}{cmd:<30}{Style.RESET_ALL} {Fore.WHITE}{desc}{Style.RESET_ALL}")
+                
+                    if not found:
+                        print(f"{Fore.RED}✗ No commands found matching '{term}'{Style.RESET_ALL}")
+                
+                    print(f"{Fore.CYAN}{'─' * 60}{Style.RESET_ALL}")
+            else:
+            # Direct command search
+                found = False
+                for category, commands in categories.items():
+                    for cmd, desc in commands:
+                        if search in cmd.lower():
+                            found = True
+                            print(f"{Fore.GREEN}✓ {cmd}: {Fore.WHITE}{desc}{Style.RESET_ALL}")
+            
+                if not found:
+                    print(f"{Fore.RED}✗ Command '{search}' not found. Type 'search' to search descriptions.{Style.RESET_ALL}")
+    
+        print(f"{Fore.GREEN}[✓] Help system closed{Style.RESET_ALL}")
+# --------------------help menu ends here from above========================
+# =============================END==========================================
     def run(self):
             self.print_banner()
             while True:
