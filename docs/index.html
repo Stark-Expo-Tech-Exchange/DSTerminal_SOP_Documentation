@@ -1,25 +1,1038 @@
 ﻿<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>DSTerminal Documentation</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSTerminal v2.1.0 - SOC Security Platform Documentation</title>
     <style>
-        body { font-family: Arial; margin: 40px; background: #0a0e14; color: #e0e0e0; }
-        h1 { color: #00ff9d; }
-        h2 { color: #00ccff; }
-        code { background: #1a1f2a; padding: 2px 5px; }
+        /* ===== ROOT VARIABLES - SOC/Cyber Theme ===== */
+        :root {
+            --primary: #00ff9d;
+            --primary-glow: rgba(0, 255, 157, 0.5);
+            --secondary: #00ccff;
+            --secondary-glow: rgba(0, 204, 255, 0.3);
+            --accent: #ff3860;
+            --warning: #ffdd57;
+            --success: #48c774;
+            --bg-primary: #0a0e14;
+            --bg-secondary: #0f1419;
+            --bg-tertiary: #1a1f2a;
+            --bg-elevated: #232833;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --text-muted: #6c7a8d;
+            --border: #2a313c;
+            --border-glow: rgba(0, 255, 157, 0.2);
+            --header-height: 60px;
+            --sidebar-width: 300px;
+        }
+
+        /* ===== GLOBAL STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Matrix Rain Background Effect */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, 
+                transparent 0%,
+                rgba(0, 255, 157, 0.03) 50%,
+                transparent 100%);
+            pointer-events: none;
+            animation: matrixRain 20s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes matrixRain {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+
+        /* Scan Line Effect */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, 
+                transparent,
+                var(--primary),
+                var(--secondary),
+                transparent);
+            animation: scanLine 8s linear infinite;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        @keyframes scanLine {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        /* ===== TERMINAL HEADER ===== */
+        .terminal-header {
+            background: var(--bg-secondary);
+            border-bottom: 2px solid var(--primary);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 0 20px var(--primary-glow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .ascii-logo {
+            color: var(--primary);
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.2;
+            white-space: pre;
+            text-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        .version-badge {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--primary);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: var(--primary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .version-badge::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg,
+                transparent,
+                var(--primary-glow),
+                transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .led {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* ===== MAIN LAYOUT ===== */
+        .main-container {
+            display: flex;
+            min-height: calc(100vh - var(--header-height));
+        }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 20px 0;
+            position: sticky;
+            top: var(--header-height);
+            height: calc(100vh - var(--header-height));
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-header h3 {
+            color: var(--primary);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .nav-section {
+            margin-bottom: 25px;
+        }
+
+        .nav-section-title {
+            padding: 10px 20px;
+            color: var(--secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        .nav-item {
+            padding: 8px 20px 8px 40px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 2px solid transparent;
+            font-size: 14px;
+        }
+
+        .nav-item:hover {
+            background: var(--bg-tertiary);
+            color: var(--primary);
+            border-left-color: var(--primary);
+            padding-left: 45px;
+        }
+
+        .nav-item.active {
+            background: var(--bg-tertiary);
+            color: var(--primary);
+            border-left-color: var(--primary);
+            box-shadow: inset 0 0 10px var(--primary-glow);
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .content {
+            flex: 1;
+            padding: 30px 40px;
+            max-width: calc(100% - var(--sidebar-width));
+        }
+
+        /* ===== COMMAND CARD ===== */
+        .command-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 25px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .command-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px var(--primary-glow);
+            transform: translateY(-2px);
+        }
+
+        .command-card::before {
+            content: ">";
+            position: absolute;
+            left: -20px;
+            top: 20px;
+            color: var(--primary);
+            font-size: 20px;
+            font-weight: bold;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .command-card:hover::before {
+            left: -10px;
+            opacity: 1;
+        }
+
+        .command-header {
+            background: var(--bg-elevated);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .command-name {
+            font-family: 'Fira Code', monospace;
+            font-size: 16px;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .command-badge {
+            background: var(--bg-secondary);
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .command-body {
+            padding: 20px;
+        }
+
+        .command-description {
+            margin-bottom: 15px;
+            color: var(--text-primary);
+        }
+
+        .command-example {
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--primary);
+            padding: 15px;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            color: var(--text-primary);
+            border-radius: 0 8px 8px 0;
+            margin: 15px 0;
+            position: relative;
+        }
+
+        .command-example::before {
+            content: "$";
+            color: var(--primary);
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        .command-params {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .param {
+            background: var(--bg-secondary);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            border: 1px solid var(--border);
+        }
+
+        .param code {
+            background: var(--bg-tertiary);
+            color: var(--secondary);
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-right: 8px;
+        }
+
+        /* ===== INFO PANELS ===== */
+        .info-panel {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 30px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .info-panel::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+            opacity: 0.1;
+        }
+
+        .info-panel-title {
+            color: var(--primary);
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-panel-title::before {
+            content: "▶";
+            color: var(--primary);
+            font-size: 14px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        /* ===== TABLES ===== */
+        .command-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .command-table th {
+            text-align: left;
+            padding: 12px 15px;
+            background: var(--bg-elevated);
+            color: var(--primary);
+            font-size: 14px;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .command-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        .command-table tr:hover td {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .command-table code {
+            background: var(--bg-tertiary);
+            color: var(--secondary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        /* ===== PROGRESS BAR ===== */
+        .progress-container {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            height: 20px;
+            position: relative;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 10px;
+            position: relative;
+            animation: progressPulse 2s infinite;
+        }
+
+        @keyframes progressPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        /* ===== TYPOGRAPHY ===== */
+        h1 {
+            color: var(--primary);
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px var(--primary-glow);
+            position: relative;
+            display: inline-block;
+        }
+
+        h1::after {
+            content: "";
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        h2 {
+            color: var(--secondary);
+            font-size: 1.8em;
+            margin: 30px 0 15px;
+            position: relative;
+        }
+
+        h2::before {
+            content: "##";
+            color: var(--text-muted);
+            font-size: 0.8em;
+            margin-right: 10px;
+            opacity: 0.5;
+        }
+
+        h3 {
+            color: var(--text-primary);
+            font-size: 1.3em;
+            margin: 20px 0 10px;
+        }
+
+        code {
+            background: var(--bg-tertiary);
+            color: var(--secondary);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9em;
+            border: 1px solid var(--border);
+        }
+
+        pre {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 3px solid var(--primary);
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            color: var(--text-primary);
+        }
+
+        /* ===== ALERTS ===== */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid;
+            position: relative;
+        }
+
+        .alert-info {
+            background: rgba(0, 204, 255, 0.1);
+            border-left-color: var(--secondary);
+        }
+
+        .alert-warning {
+            background: rgba(255, 221, 87, 0.1);
+            border-left-color: var(--warning);
+        }
+
+        .alert-danger {
+            background: rgba(255, 56, 96, 0.1);
+            border-left-color: var(--accent);
+        }
+
+        .alert-success {
+            background: rgba(72, 199, 116, 0.1);
+            border-left-color: var(--success);
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            padding: 30px 40px;
+            margin-top: 50px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
+
+        .footer-section h4 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section li {
+            margin-bottom: 8px;
+        }
+
+        .footer-section a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-section a:hover {
+            color: var(--primary);
+        }
+
+        /* ===== UTILITY CLASSES ===== */
+        .text-glow {
+            text-shadow: 0 0 10px currentColor;
+        }
+
+        .border-glow {
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        .typing-effect {
+            overflow: hidden;
+            white-space: nowrap;
+            animation: typing 3s steps(40);
+        }
+
+        @keyframes typing {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+
+        .glitch {
+            position: relative;
+        }
+
+        .glitch::before,
+        .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .glitch::before {
+            left: 2px;
+            text-shadow: -2px 0 var(--accent);
+            animation: glitch-1 2s infinite linear alternate-reverse;
+        }
+
+        .glitch::after {
+            left: -2px;
+            text-shadow: 2px 0 var(--secondary);
+            animation: glitch-2 3s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-1 {
+            0%, 100% { clip-path: inset(0 0 0 0); }
+            20% { clip-path: inset(20% 0 30% 0); }
+            40% { clip-path: inset(50% 0 10% 0); }
+            60% { clip-path: inset(80% 0 5% 0); }
+            80% { clip-path: inset(30% 0 40% 0); }
+        }
+
+        @keyframes glitch-2 {
+            0%, 100% { clip-path: inset(0 0 0 0); }
+            30% { clip-path: inset(10% 0 60% 0); }
+            50% { clip-path: inset(40% 0 30% 0); }
+            70% { clip-path: inset(70% 0 15% 0); }
+        }
+
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        /* ===== RESPONSIVE DESIGN ===== */
+        @media (max-width: 1024px) {
+            .sidebar {
+                display: none;
+            }
+            .content {
+                max-width: 100%;
+                padding: 20px;
+            }
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .terminal-header {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            .logo-container {
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>DSTerminal Documentation</h1>
-    <p>Version 2.0.59</p>
-    <h2>Quick Start</h2>
-    <p>Type <code>help</code> for commands.</p>
-    <h2>Basic Commands</h2>
-    <ul>
-        <li><code>system scan -All</code> - System scan</li>
-        <li><code>net -n mon</code> - Network monitor</li>
-        <li><code>encrypt &lt;file&gt;</code> - Encrypt file</li>
-        <li><code>decrypt &lt;file&gt;</code> - Decrypt file</li>
-    </ul>
+    <!-- ===== TERMINAL HEADER ===== -->
+    <div class="terminal-header">
+        <div class="logo-container">
+            <div class="ascii-logo">
+                ██████╗ ███████╗████████╗███████╗██████╗ ███╗   ███╗██╗███╗   ██╗ █████╗ ██╗     
+                ██╔══██╗██╔════╝╚══██╔══╝██╔════╝██╔══██╗████╗ ████║██║████╗  ██║██╔══██╗██║     
+                ██║  ██║█████╗     ██║   █████╗  ██████╔╝██╔████╔██║██║██╔██╗ ██║███████║██║     
+                ██║  ██║██╔══╝     ██║   ██╔══╝  ██╔══██╗██║╚██╔╝██║██║██║╚██╗██║██╔══██║██║     
+                ██████╔╝███████╗   ██║   ███████╗██║  ██║██║ ╚═╝ ██║██║██║ ╚████║██║  ██║███████╗
+                ╚═════╝ ╚══════╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝
+            </div>
+            <div class="version-badge glitch" data-text="v2.1.0">v2.1.0</div>
+        </div>
+        <div class="status-indicator">
+            <span class="led"></span>
+            <span>SECURE | SOC TERMINAL ONLINE</span>
+        </div>
+    </div>
+
+    <!-- ===== MAIN CONTAINER ===== -->
+    <div class="main-container">
+        <!-- ===== SIDEBAR NAVIGATION ===== -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h3>Navigation</h3>
+            </div>
+            
+            <div class="nav-section">
+                <div class="nav-section-title">Getting Started</div>
+                <div class="nav-item active" data-target="quickstart">Quick Start Guide</div>
+                <div class="nav-item" data-target="installation">Installation</div>
+                <div class="nav-item" data-target="workspace">Workspace Setup</div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Core Commands</div>
+                <div class="nav-item" data-target="system">System Commands</div>
+                <div class="nav-item" data-target="network">Network Commands</div>
+                <div class="nav-item" data-target="crypto">Cryptography</div>
+                <div class="nav-item" data-target="forensics">Forensics</div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Security Modules</div>
+                <div class="nav-item" data-target="scanning">Scanning</div>
+                <div class="nav-item" data-target="monitoring">Monitoring</div>
+                <div class="nav-item" data-target="hardening">Hardening</div>
+                <div class="nav-item" data-target="exploits">Exploit Detection</div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Advanced</div>
+                <div class="nav-item" data-target="encryption">Encryption</div>
+                <div class="nav-item" data-target="steganography">Steganography</div>
+                <div class="nav-item" data-target="forensics">Memory Forensics</div>
+                <div class="nav-item" data-target="api">API Integration</div>
+            </div>
+        </div>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <div class="content">
+            <!-- ===== QUICK START SECTION ===== -->
+            <div id="quickstart" class="content-section active">
+                <h1 class="typing-effect">DSTerminal Documentation</h1>
+                <p class="text-glow">Version 2.1.0 | Security Operations Center Terminal</p>
+
+                <div class="info-panel alert-info">
+                    <div class="info-panel-title">SYSTEM STATUS</div>
+                    <div class="grid-2">
+                        <div>
+                            <p><strong>Platform:</strong> Windows/Linux/macOS</p>
+                            <p><strong>Python Version:</strong> 3.8+</p>
+                            <p><strong>Last Update:</strong> March 2024</p>
+                        </div>
+                        <div>
+                            <p><strong>Active Modules:</strong> 47</p>
+                            <p><strong>Security Tools:</strong> 23</p>
+                            <p><strong>Threat Intelligence:</strong> Active</p>
+                        </div>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar" style="width: 100%;"></div>
+                    </div>
+                </div>
+
+                <h2>Quick Start Guide</h2>
+                <p>DSTerminal is a comprehensive Security Operations Center (SOC) platform designed for defensive security operations. Type <code>help</code> in the terminal to see all available commands.</p>
+
+                <div class="alert alert-success">
+                    <strong>✓ System Ready</strong> - DSTerminal is fully operational with all security modules loaded.
+                </div>
+
+                <h3>First-Time Setup</h3>
+                <pre><code># Initialize workspace
+mkdir DSTerminal_Workspace
+cd DSTerminal_Workspace
+
+# Create default directories
+mkdir operators scans reports exploits sandbox quarantine
+
+# Start DSTerminal
+python dsterminal.py</code></pre>
+
+                <h2>Basic Command Reference</h2>
+                
+                <div class="command-card">
+                    <div class="command-header">
+                        <span class="command-name">system scan -All</span>
+                        <span class="command-badge">Core Security</span>
+                    </div>
+                    <div class="command-body">
+                        <div class="command-description">
+                            Performs comprehensive system security scan including memory analysis, process inspection, file integrity checks, and network monitoring.
+                        </div>
+                        <div class="command-example">
+                            system scan -All
+                        </div>
+                        <div class="command-params">
+                            <span class="param"><code>--quick</code> Fast scan</span>
+                            <span class="param"><code>--deep</code> Thorough analysis</span>
+                            <span class="param"><code>--output</code> Save report</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="command-card">
+                    <div class="command-header">
+                        <span class="command-name">net -n mon</span>
+                        <span class="command-badge">Network</span>
+                    </div>
+                    <div class="command-body">
+                        <div class="command-description">
+                            Real-time network monitoring with threat detection. Analyzes connections, bandwidth usage, and identifies suspicious activities.
+                        </div>
+                        <div class="command-example">
+                            net -n mon
+                        </div>
+                        <div class="command-params">
+                            <span class="param"><code>--duration</code> Monitor time</span>
+                            <span class="param"><code>--export</code> Save report</span>
+                            <span class="param"><code>--geoip</code> Enable geolocation</span>
+                        </div>
+                    </div>
+                </div>
+
+                <h2>Command Categories</h2>
+
+                <table class="command-table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Command</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>System</td>
+                            <td><code>sysinfo</code></td>
+                            <td>Display detailed system information</td>
+                        </tr>
+                        <tr>
+                            <td>Network</td>
+                            <td><code>portsweep &lt;target&gt;</code></td>
+                            <td>Scan for open ports</td>
+                        </tr>
+                        <tr>
+                            <td>Forensics</td>
+                            <td><code>memdump</code></td>
+                            <td>Capture memory for analysis</td>
+                        </tr>
+                        <tr>
+                            <td>Crypto</td>
+                            <td><code>encrypt &lt;file&gt;</code></td>
+                            <td>AES-256 encryption</td>
+                        </tr>
+                        <tr>
+                            <td>Hardening</td>
+                            <td><code>harden -t sys</code></td>
+                            <td>Apply system hardening</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- ===== INSTALLATION SECTION ===== -->
+                <div id="installation" class="content-section" style="display: none;">
+                    <h2>Installation Guide</h2>
+                    
+                    <div class="info-panel">
+                        <h3>Windows Installation</h3>
+                        <pre><code># Using the installer
+1. Download DSTerminal_Installer_v2.1.0.exe
+2. Run as normal user (no admin required)
+3. Follow the setup wizard
+4. Launch from Start Menu or Desktop</code></pre>
+
+                        <h3>Linux Installation</h3>
+                        <pre><code># From source
+git clone https://github.com/Stark-Expo-Tech-Exchange/DSTerminal_releases_latest.git
+cd DSTerminal_releases_latest
+pip install -r requirements.txt
+python dsterminal.py</code></pre>
+
+                        <h3>macOS Installation</h3>
+                        <pre><code># Using Homebrew
+brew install dsterminal
+dsterminal</code></pre>
+                    </div>
+                </div>
+
+                <!-- ===== WORKSPACE SECTION ===== -->
+                <div id="workspace" class="content-section" style="display: none;">
+                    <h2>Workspace Configuration</h2>
+                    
+                    <div class="grid-2">
+                        <div class="info-panel">
+                            <h3>Directory Structure</h3>
+                            <pre><code>DSTerminal_Workspace/
+├── operators/     # Session logs
+├── scans/         # Scan results
+├── reports/       # Generated reports
+├── exploits/      # Safe exploit storage
+├── sandbox/       # Testing environment
+└── quarantine/    # Isolated threats</code></pre>
+                        </div>
+
+                        <div class="info-panel">
+                            <h3>Configuration Files</h3>
+                            <pre><code>config/
+├── settings.json
+├── profiles/
+├── api_keys.conf
+└── update_channel.conf</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== FOOTER ===== -->
+    <div class="footer">
+        <div class="footer-section">
+            <h4>DSTerminal</h4>
+            <ul>
+                <li><a href="#">Version 2.1.0</a></li>
+                <li><a href="#">Release Notes</a></li>
+                <li><a href="#">Roadmap</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-section">
+            <h4>Documentation</h4>
+            <ul>
+                <li><a href="#">User Guide</a></li>
+                <li><a href="#">API Reference</a></li>
+                <li><a href="#">Tutorials</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-section">
+            <h4>Support</h4>
+            <ul>
+                <li><a href="#">GitHub Issues</a></li>
+                <li><a href="#">Discord</a></li>
+                <li><a href="#">Email</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-section">
+            <h4>Legal</h4>
+            <ul>
+                <li><a href="#">License</a></li>
+                <li><a href="#">Privacy</a></li>
+                <li><a href="#">Terms</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ===== SCRIPT FOR INTERACTIVITY ===== -->
+    <script>
+        // Navigation functionality
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // Remove active class from all nav items
+                document.querySelectorAll('.nav-item').forEach(nav => {
+                    nav.classList.remove('active');
+                });
+                
+                // Add active class to clicked item
+                this.classList.add('active');
+                
+                // Hide all content sections
+                document.querySelectorAll('.content-section').forEach(section => {
+                    section.style.display = 'none';
+                });
+                
+                // Show selected content section
+                const targetId = this.getAttribute('data-target');
+                const targetSection = document.getElementById(targetId);
+                if (targetSection) {
+                    targetSection.style.display = 'block';
+                } else {
+                    // If no specific section, show quickstart
+                    document.getElementById('quickstart').style.display = 'block';
+                }
+            });
+        });
+
+        // Typing effect on load
+        window.addEventListener('load', function() {
+            const h1 = document.querySelector('h1');
+            h1.classList.add('typing-effect');
+            
+            // Add glitch effect periodically
+            setInterval(() => {
+                const badge = document.querySelector('.version-badge');
+                badge.classList.add('glitch');
+                setTimeout(() => {
+                    badge.classList.remove('glitch');
+                }, 200);
+            }, 3000);
+        });
+
+        // Simulate terminal cursor
+        const cursor = document.createElement('span');
+        cursor.className = 'cursor';
+        cursor.innerHTML = '_';
+        cursor.style.animation = 'blink 1s infinite';
+        document.querySelector('h1').appendChild(cursor);
+
+        // Blink animation for cursor
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes blink {
+                0%, 50% { opacity: 1; }
+                51%, 100% { opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
 </body>
 </html>
