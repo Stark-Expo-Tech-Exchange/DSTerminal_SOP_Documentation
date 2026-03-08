@@ -1,5 +1,6 @@
 import os
 from turtle import color
+
 # ===============================
 # Cross-platform terminal support
 # ===============================
@@ -19,7 +20,7 @@ import socket
 import netifaces
 from getpass import getpass
 import requests
-import base64
+import uuid
 import hashlib
 import logging
 import psutil
@@ -45,6 +46,8 @@ from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.formatted_text import HTML
+from prompt_toolkit.shortcuts import print_formatted_text
+
 from colorama import Fore, Style, init
 # from pyfiglet import figlet_format
 from pyfiglet import figlet_format
@@ -85,7 +88,10 @@ from reportlab.lib.colors import black, lightgrey, HexColor
 init(autoreset=True)
 
 engine = EducationTypingEngine(speed=0.03)
+username = "OP-" + uuid.uuid4().hex[:6].upper()
 
+
+# =============dsterminal workspace creation from here===============
 def init_workspace():
     workspace_path = os.path.expanduser("~/dsterminal_workspace")
     subdirs = ["sandbox", "scans", "exploits", "reports"]
@@ -515,6 +521,20 @@ def get_geo_ip(ip):
     return None
     
 class SecurityTerminal:
+        # ======= Neon SOC colors for log viewer =======
+    NEON_HEADER = "<ansimagenta><b>╔══════════════════════════════════════════════╗</b></ansimagenta>"
+    NEON_FOOTER = "<ansimagenta><b>╚══════════════════════════════════════════════╝</b></ansimagenta>"
+    NEON_LINE = "<ansicyan>║</ansicyan>"
+    NEON_COMMAND = "<ansigreen>"
+    RESET = "</ansigreen>"
+
+    BLINK = '\033[5m'
+    BOLD = '\033[1m'
+    DIM = '\033[2m'
+    UNDERLINE = '\033[4m'
+    REVERSE = '\033[7m'
+    RESET_ALL = '\033[0m'
+
     def __init__(self):
         # Set up workspace root and current directory
         self.workspace_root = os.path.abspath("DSTerminal_Workspace")
@@ -541,6 +561,154 @@ class SecurityTerminal:
         # Virtual filesystem directory
         self.vfs_root = os.path.expanduser("~/.dsterminal_vfs")
         self.ensure_vfs()
+
+    # =========initializing operator workspace and username and session logging===========
+    def typewriter(self, text, delay=0.03):
+        """Simulate typing animation"""
+        for char in text:
+            sys.stdout.write(char)
+            sys.stdout.flush()
+            time.sleep(delay)
+        print()
+
+    def initialize_operator_session(self):
+
+        operators_root = os.path.join(self.workspace_root, "operators")
+        os.makedirs(operators_root, exist_ok=True)
+
+    # Generate unique operator username
+        username = "OP-" + uuid.uuid4().hex[:6].upper()
+        self.session_id = "SOC-" + uuid.uuid4().hex[:5].upper()
+        operator_dir = os.path.join(operators_root, username)
+        os.makedirs(operator_dir, exist_ok=True)
+
+        log_file = os.path.join(operator_dir, "session_log.txt")
+
+        with open(log_file, "w", encoding="utf-8") as f:
+                  # ANSI/HTML color tags for neon cyber style
+
+
+            f.write("╔══════════════════════════════════════════════╗\n")
+            f.write("║       DSTerminal Operator Security Audit Log ║\n")
+            f.write("╠══════════════════════════════════════════════╣\n")
+            f.write(f"║ Operator   : {username}\n")
+            f.write(f"║ Session ID : {self.session_id}\n")
+            f.write(f"║ Host       : {socket.gethostname()}\n")
+            f.write(f"║ Start Time : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write("╠══════════════════════════════════════════════╣\n")
+            f.write("║ Command Activity                             ║\n")
+            f.write("╠                                           ═══╣\n")
+            f.write("╠══════════════════════════════════════════════╣\n")
+            f.write(f"║ Session End : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write("╚══════════════════════════════════════════════╝\n")
+       
+
+        self.operator_username = username
+        self.operator_dir = operator_dir
+        self.log_file = log_file
+
+        start_time = time.time()
+ 
+  
+        self.typewriter("\n[ DSTerminal Security Initialization ]\n", 0.03)
+        self.typewriter("✔ Generating Operator Identity...", 0.05)
+        time.sleep(1.5)
+
+        self.typewriter("✔ Creating Secure Session...", 0.05)
+        time.sleep(1.5)
+
+        self.typewriter("✔ Logging Enabled\n", 0.05)
+        time.sleep(1)
+
+        self.typewriter(f" 🛡️, 🌐 ⚡YOUR UNIQUE OPERATOR SESSION USERNAME IS: {username}\n", 0.04)
+
+        # Ensure total animation lasts about 10 seconds
+        elapsed = time.time() - start_time
+        if elapsed < 10:
+            time.sleep(10 - elapsed)
+    
+    # ======================Every command typed should be recorded.=======
+ 
+    def view_session_log(self, log_path):
+        """Display session log in cinematic SOC style"""
+        try:
+            with open(log_path, "r") as f:
+                lines = f.readlines()
+
+            width = shutil.get_terminal_size().columns
+        # Print header
+            print_formatted_text(HTML(" " * ((width - 50)//2) + NEON_HEADER))
+            print_formatted_text(HTML(" " * ((width - 50)//2) + f"{NEON_LINE}    <b>DSTerminal SOC SESSION LOG</b> {NEON_LINE}"))
+            print_formatted_text(HTML(" " * ((width - 50)//2) + NEON_HEADER.replace("╔", "╠").replace("╗", "╣")))
+
+        # Print log content with typing animation
+            for line in lines:
+                content = line.rstrip()
+            # Determine color
+                if "Operator" in content or "Session ID" in content or "Host" in content:
+                    formatted_line = f"{NEON_LINE} <ansiyellow>{content}</ansiyellow>"
+                elif "Session End" in content or "Start Time" in content:
+                    formatted_line = f"{NEON_LINE} <ansired>{content}</ansired>"
+                elif "COMMAND" in content:
+                    formatted_line = f"{NEON_LINE} {NEON_COMMAND}{content}{RESET}"
+                else:
+                    formatted_line = f"{NEON_LINE} {content}"
+
+                padding = " " * ((width - len(content) - 4)//2)
+                self.typewriter(padding + formatted_line, delay=0.01)
+
+        # Print footer
+            print_formatted_text(HTML(" " * ((width - 50)//2) + NEON_FOOTER))
+
+        except Exception as e:
+            print(f"<ansired>[!] Error displaying log: {str(e)}</ansired>")
+
+        # --------------------------
+
+    def display_centered_box(self, content):
+        """Display centered box with content"""
+        BLINK = "\033[5m"
+        CYAN = "\033[96m"
+        RESET = "\033[0m"
+        width = shutil.get_terminal_size().columns
+
+        lines = content.splitlines()
+
+        for line in lines:
+            padding = max((width - len(line)) // 2, 0)
+            # print(" " * padding + line)
+            print(" " * padding + CYAN + BLINK + line + RESET)
+        
+    def log_to_siem(self, message):
+
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        try:
+            with open("workspace/siem_log.txt", "a") as f:
+                f.write(f"[{timestamp}] {message}\n")
+        except:
+            pass
+
+    def log_command(self, command):
+
+        timestamp = datetime.now().strftime("%H:%M:%S")
+
+        with open(self.log_file, "a", encoding="utf-8") as f:
+            f.write(f"[{timestamp}] COMMAND: {command}\n")
+
+# ====================Session end should also be recorded.========================
+    def save_session_end(self):
+        from datetime import datetime
+
+        try:
+            with open(self.log_file, "a") as f:
+                f.write("╠══════════════════════════════════════════════╣\n")
+                f.write(f"║ Session End : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write("╚══════════════════════════════════════════════╝\n")
+        except:
+            pass
+
+    # ===============END HERE===========================
 
     def get_key(self):
         if IS_WINDOWS:
@@ -652,7 +820,7 @@ class SecurityTerminal:
                 'check integrity', 'encrypt', 'decrypt', 'watchfolder',
                 'traceroute', 'exploitcheck', 'macspoof', 'dnssec',
                 'sqlmap', 'ransomwatch', 'wificrack', 'stegcheck',
-                'certcheck', 'torify', 'msf', 'encrypt-setup', 'crypto-init', 'crypto-status', 'mkdir', 'cd', 'touch', 'cat'
+                'certcheck', 'torify', 'recon', 'recon --url [TARGET URL HERE] -o [output file e.g report.txt]', 'recon -full <TARGET>', 'msf', 'encrypt-setup', 'crypto-init', 'crypto-status', 'mkdir', 'cd', 'touch', 'cat'
             ]),
             bottom_toolbar=HTML('<b>DSTerminal</b> v{} | Mode: <style bg="{}">{}</style>').format(
                 CONFIG['CURRENT_VERSION'],
@@ -690,8 +858,47 @@ class SecurityTerminal:
         return os.name == "nt"
 
     def print_banner(self):
-        colors = [Fore.RED, Fore.GREEN, Fore.CYAN, Fore.MAGENTA, Fore.YELLOW, Fore.BLUE]
-        color = random.choice(colors)
+    # ANSI color codes for hacking-style colors
+        colors = [
+            '\033[92m',  # Light Green (Matrix style)
+            '\033[38;5;46m',  # Matrix Green
+            '\033[38;5;82m',  # Bright Green
+            '\033[38;5;118m',  # Lime Green
+            '\033[38;5;154m',  # Yellow-Green
+            '\033[38;5;190m',  # Light Yellow-Green
+            '\033[38;5;226m',  # Bright Yellow
+            '\033[38;5;220m',  # Gold
+            '\033[38;5;214m',  # Orange
+            '\033[38;5;202m',  # Bright Orange
+            '\033[38;5;196m',  # Bright Red
+            '\033[38;5;201m',  # Pink/Magenta
+            '\033[38;5;165m',  # Purple
+            '\033[38;5;129m',  # Violet
+            '\033[38;5;93m',   # Deep Purple
+            '\033[38;5;63m',   # Blue-Purple
+            '\033[38;5;69m',   # Blue
+            '\033[38;5;75m',   # Light Blue
+            '\033[38;5;81m',   # Cyan
+            '\033[38;5;87m',   # Light Cyan
+            '\033[96m',        # Cyan
+            '\033[95m',        # Magenta
+            '\033[91m',        # Light Red
+            '\033[93m',        # Light Yellow
+        ]
+    
+        # Add blinking effects for some colors
+        BLINK = '\033[5m'
+        BOLD = '\033[1m'
+    
+        # Mix in some blinking and bold variants
+        extended_colors = []
+        for color in colors:
+            extended_colors.append(color)
+            extended_colors.append(color + BOLD)
+            if random.random() > 0.7:  # Add blinking to some colors randomly
+                extended_colors.append(color + BLINK)
+    
+        color = random.choice(extended_colors)
         terminal_width = shutil.get_terminal_size((80, 20)).columns
 
         banner_lines = [
@@ -703,8 +910,8 @@ class SecurityTerminal:
         "    ██████╔╝██║     ██║     ███████╗██║ ╚████║███████╗██╔╝ ██╗",
         "    ╚═════╝ ╚═╝     ╚═╝     ╚══════╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝",
         "",
-        "╠════════════════════════════════════════════════════════════════============══════╣",
-        f"║    Defensive Security Terminal v2.0.59 | {platform.system()} {platform.release()}   ║",
+        "╠══════════════════════════════════════════════════════════════============══════╣",
+        f"║    Defensive Security Terminal v2.1.0 | {platform.system()} {platform.release()}   ║",
         "║    Developed by: Spark Wilson Spink | © 2024| Powered by Stark Expo Tech Exchange║",
         "║    Type 'help' for available commands                                            ║",
         f"║ (🔍, ⚡, 🛡️) 🌐 ⚡ CLI Mode: {'ADMIN' if self.is_admin() else 'USER'}               ",
@@ -718,7 +925,6 @@ class SecurityTerminal:
 
         def type_line(line, delay=0.002, glitch=False):
             centered = line.center(terminal_width)
-            output = ""
             for char in centered:
                 if glitch and random.random() < 0.04:
                     sys.stdout.write(color + glitch_char(char))
@@ -740,7 +946,7 @@ class SecurityTerminal:
 
         if not self.is_admin():
             print("\n[!] Warning: Running without administrator privileges. Some features may be limited.")
-
+            # =====================banner print ends here======================================
     def system_info(self):
         """Enhanced system information display with security context"""
         print("\n" + "="*60)
@@ -1025,6 +1231,48 @@ class SecurityTerminal:
     
     # -----------------------------------
     # Command dispatcher - THIS IS THE KEY MISSING PART!
+    def safe_read_file(self, filename):
+        """Safely read files with multiple encoding attempts"""
+        if not os.path.exists(filename):
+            return f"{Fore.RED}[!] File '{filename}' not found{Style.RESET_ALL}"
+    
+    # Try multiple encodings in order of likelihood
+        encodings = ['utf-8', 'utf-8-sig', 'latin-1', 'cp1252', 'iso-8859-1', 'cp850', 'cp437']
+    
+        for encoding in encodings:
+            try:
+                with open(filename, 'r', encoding=encoding) as f:
+                    content = f.read()
+                    return content
+            except UnicodeDecodeError:
+                continue
+            except Exception as e:
+                return f"{Fore.RED}[!] Error reading file: {str(e)}{Style.RESET_ALL}"
+    
+    # If all encodings fail, try reading as binary and show hex dump
+        try:
+            with open(filename, 'rb') as f:
+                data = f.read()
+            
+        # Check if it's likely a text file with some binary data
+            text_chars = bytearray({7,8,9,10,12,13,27} | set(range(0x20, 0x100)) - {0x7f})
+            if all(b in text_chars for b in data[:100]):
+                # Try to decode with replacement
+                return data.decode('utf-8', errors='replace')
+            else:
+                # Binary file - show hex dump
+                hex_lines = []
+                for i in range(0, min(len(data), 512), 16):
+                    chunk = data[i:i+16]
+                    hex_str = ' '.join(f'{b:02x}' for b in chunk)
+                    ascii_str = ''.join(chr(b) if 32 <= b <= 126 else '.' for b in chunk)
+                    hex_lines.append(f"{i:04x} | {hex_str:<48} | {ascii_str}")
+            
+                return f"{Fore.YELLOW}[!] Binary file detected. Hex dump (first 512 bytes):\n{Fore.CYAN}" + "\n".join(hex_lines) + f"{Style.RESET_ALL}"
+            
+        except Exception as e:
+            return f"{Fore.RED}[!] Error reading file: {str(e)}{Style.RESET_ALL}"
+    
     def process_command(self, user_input):
         """Process and dispatch commands"""
         if not user_input.strip():
@@ -1068,11 +1316,27 @@ class SecurityTerminal:
                 self.touch(args[0])
             else:
                 print(f"{Fore.RED}[!] Usage: touch <filename>{Style.RESET_ALL}")
-        elif command == "cat":
-            if args:
-                self.cat(args[0])
-            else:
+        # Add this to your command handler:
+        elif command == "viewlog" or command == "session":
+            self.view_session_log()
+
+        elif command == 'cat ':
+            if not args:
                 print(f"{Fore.RED}[!] Usage: cat <filename>{Style.RESET_ALL}")
+                return True
+            filename = args[0]
+            try:
+                if hasattr(self, 'operator_dir') and os.path.exists(self.operator_dir):
+                    filepath = os.path.join(self.operator_dir, filename)
+                else:
+                    filepath = self.safe_path(filename)
+            except Exception as e:
+                    filepath = filename  # Fallback to original filename if safe_path fails
+
+              # Read the file with multiple encoding attempts
+            content = self.safe_read_file(filepath)
+            print(content)
+
         elif command == "harden":
             dry_run = "-t" in args or "--test" in args
             self.harden_system(dry_run=dry_run)
@@ -1114,7 +1378,7 @@ class SecurityTerminal:
     
     def run(self):
         """Main terminal loop"""
-        print(f"{Fore.GREEN}DSTerminal v2.0.59 | Type 'help' for commands | Workspace: ~/DSTerminal_Workspace{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}DSTerminal v2.1.0 | Type 'help' for commands | Workspace: ~/DSTerminal_Workspace{Style.RESET_ALL}")
         print(f"{Fore.YELLOW}Mode: {'ADMIN' if self.is_admin() else 'USER'}{Style.RESET_ALL}\n")
         
         running = True
@@ -4227,13 +4491,71 @@ class SecurityTerminal:
             os_type = platform.system().lower()  # 'linux', 'windows', 'darwin'
             print(f"[+] Detected OS: {os_type}")
 
+            # Clean the version tag (remove 'v' if present)
+            clean_version = latest_tag.lstrip('v')
+
     # Determine download URL based on OS
             if os_type == "linux":
-                filename = f"dsterminal_{latest_tag}_amd64.deb"
+                filename = f"dsterminal_{clean_version}_amd64.deb"
                 download_url = f"https://github.com/Stark-Expo-Tech-Exchange/DSTerminal_releases_latest/releases/download/{latest_tag}/{filename}"
             elif os_type == "windows":
-                filename = f"DSTerminalInstaller_{latest_tag}.exe"
-                download_url = f"https://github.com/Stark-Expo-Tech-Exchange/DSTerminal_releases_latest/releases/download/{latest_tag}/{filename}"
+                    clean_version = latest_tag.lstrip('v')
+                    version_with_v = f"v{clean_version}"
+                    possible_filenames = [
+                        f"DSTerminal_Installer_v{clean_version}.exe",
+                        f"DSTerminal_Setup_{clean_version}_x64.exe",
+                        f"DSTerminalInstaller_{version_with_v}.exe",
+                        f"DSTerminal_{clean_version}_setup.exe",
+                        f"DSTerminal_v{clean_version}_installer.exe"
+                    ]
+
+                    downloaded = False
+                    for filename in possible_filenames:
+                        download_url = f"https://github.com/Stark-Expo-Tech-Exchange/DSTerminal_releases_latest/releases/download/{version_with_v}/{filename}"
+                        print(f"[+] Trying: {filename}")
+        
+                        try:
+                            # First, check if the file exists without downloading (HEAD request)
+                            response = requests.head(download_url, timeout=5)
+                            if response.status_code == 200:
+                                print(f"[+] Found: {filename}")
+                                # Now download the file
+                                print(f"[+] Downloading {filename} from GitHub...")
+                                r = requests.get(download_url, stream=True)
+                                r.raise_for_status()
+                
+                                # Get file size for progress bar
+                                total_size = int(r.headers.get('content-length', 0))
+                
+                                with open(filename, 'wb') as f:
+                                    if total_size == 0:
+                                        f.write(r.content)
+                                    else:
+                                        with tqdm(total=total_size, unit='B', unit_scale=True, desc=filename) as pbar:
+                                            for chunk in r.iter_content(chunk_size=8192):
+                                                f.write(chunk)
+                                                pbar.update(len(chunk))
+                
+                                print(f"[+] Download complete: {filename}")
+                                print(f"[+] Please run the downloaded installer manually: {filename}")
+                                print("[+] After installation, restart DSTerminal.")
+                                downloaded = True
+                                break
+                            else:
+                                print(f"[-] Not found (HTTP {response.status_code})")
+                        except Exception as e:
+                            print(f"[-] Error checking: {e}")
+    
+                    if not downloaded:
+                        print("[!] Could not find installer file. Please download manually from:")
+                        print(f"https://github.com/Stark-Expo-Tech-Exchange/DSTerminal_releases_latest/releases/tag/{version_with_v}")
+
+                   # Try each filename until one works
+                    for filename in possible_filenames:
+                        download_url = f"https://github.com/Stark-Expo-Tech-Exchange/DSTerminal_releases_latest/releases/download/{version_with_v}/{filename}"
+                        print(f"[+] Trying: {filename}")
+                    # You might want to check if URL exists before downloading
+                        break  # For now, just use the first one
             else:
                 print("[!] Your OS is not supported for auto-update.")
                 return
@@ -4262,8 +4584,12 @@ class SecurityTerminal:
                     print(f"[!] Installation failed: {e}")
                     print(f"[+] You may try: sudo dpkg -i {filename}")
             elif os_type == "windows":
-                print(f"[+] Please run the downloaded installer manually: {filename}")
-                print("[+] After installation, restart DSTerminal.")
+                # print(f"[+] Please run the downloaded installer manually: {filename}")
+                # print("[+] After installation, restart DSTerminal.")
+                clean_version = latest_tag.lstrip('v')
+                version_with_v = f"v{clean_version}"
+                filename = f"DSTerminal_Installer_v{clean_version}.exe"
+                download_url = f"https://github.com/Stark-Expo-Tech-Exchange/DSTerminal_releases_latest/releases/download/{version_with_v}/{filename}"
 
     # Update local VERSION file
             version_file = os.path.join(os.path.dirname(__file__), "VERSION")
@@ -4312,7 +4638,7 @@ class SecurityTerminal:
                 ))
 
                 if console.input("Install update now? (y/N): ").lower() == "y":
-                    return perform_update(latest)
+                    return perform_update(latest['version'])
 
             else:
                 console.print(Panel(
@@ -4335,12 +4661,6 @@ class SecurityTerminal:
 # ---------------------------wipe tracks and terminal clearing
     def clear_terminal(self):
         """Advanced terminal clearing with spinning boxes and centered animations"""
-        from rich.console import Console
-        from rich.panel import Panel
-        from rich.align import Align
-        from rich.live import Live
-        from rich.layout import Layout
-        import platform
     
         console = Console()
         terminal_width = shutil.get_terminal_size((80, 20)).columns
@@ -4435,7 +4755,7 @@ class SecurityTerminal:
                     final_display = Align.center(layout)
                 
                     live.update(final_display)
-                    time.sleep(1.05)
+                    time.sleep(0.08)
     
     # Execute actual terminal clear
         os.system("clear" if platform.system() != "Windows" else "cls")
@@ -4478,7 +4798,7 @@ class SecurityTerminal:
                 console.print(f"[bold {color}]{line}[/bold {color}]")
             else:
                 console.print(f"[dim]{line}[/dim]")
-            time.sleep(0.5)
+            time.sleep(0.08)
     
     # Add a status message with blink effect
         status_panel = Panel(
@@ -5051,7 +5371,7 @@ class SecurityTerminal:
                 os.system('cls' if os.name == 'nt' else 'clear')
                 print(f"\n{color}{centered_banner}{Style.RESET_ALL}")
                 print(f"\n{Fore.CYAN}{self._center_text('═' * 60)}{Style.RESET_ALL}")
-                print(f"{Fore.YELLOW}{self._center_text('DEFENSIVE SECURITY TERMINAL v2.0.59')}{Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}{self._center_text('DEFENSIVE SECURITY TERMINAL v2.1.0')}{Style.RESET_ALL}")
                 print(f"{Fore.CYAN}{self._center_text('═' * 60)}{Style.RESET_ALL}")
                 print(f"{Fore.GREEN}{self._center_text('⚡ System Ready | Mode: ADMIN ⚡')}{Style.RESET_ALL}")
                 time.sleep(0.2)
@@ -5600,304 +5920,6 @@ class SecurityTerminal:
             print("[!] Unknown command. Type 'help' for more command options.")
             self.show_tip(cmd)  # <-- Add this line at the end
 
-    # ==================== HELP MENU ====================
-    # def show_help(self):
-    #     help_text = """
-    #                 _____________DSTerminal Commands Help Menu______________:
-    
-    # === Core Security ========
-    # system scan -All                              - System threat scan (sys, apps, net e.t.c)
-    # net -n mon                                          - Live network monitoring
-    # exploitcheck                                        - Check for critical CVEs
-    # vtscan                                              - VirusTotal file analysis
-    # clearlogs                                           - Securely wipe system logs
-    # nikto --url <TARGET>                                - Web vulnerability scan")
-    # legitify --github <ORG/REPO>                        - Scan GitHub for misconfigurations")
-
-    # === Network Tools ========
-    # portsweep [IP]                                      - Scan target for open ports
-    # traceroute [IP]                                     - Network path analysis
-    # torify                                              - Route traffic through Tor
-    # dnssec [DOMAIN]                                     - Validate DNSSEC
-    
-    # === Forensics & Financial Crime Analysis ============
-    # memdump                       - Capture volatile memory (for analysis)
-    # hashfile [PATH]               - Generate file integrity hashes
-    # stegcheck [IMG]               - Detect hidden or embedded image data
-    # ransomwatch                   - Identify ransomware indicators
-    # finanalyze                    - Analyze suspicious financial transactions
-    # transfertrace                 - Trace and simulate transaction flows
-     
-    # === System Management ====
-    # sysinfo                                             - Detailed system report
-    # killproc PID                                        - Terminate process
-    # macspoof [IFACE]                                    - Randomize MAC address
-    # harden -t sys                                       - Apply security hardening
-    
-    # ===  Cryptography (Crypto Tools) ===
-    # encrypt FILE                                        - AES-256 file encryption
-    # decrypt FILE KEY                                    - File decryption
-    
-    # === Web Security ========
-    # sqlmap [URL]                                        - SQL injection scan
-    #                                                     - "-u", url,
-    #                                                     - "--batch",  # Non-interactive
-    #                                                     - "--risk=3",  # Higher risk level
-    #                                                     - "--level=5",  # Thorough testing
-    #                                                     - "--crawl=1",  # Limited crawling
-    #                                                     - "--random-agent",
-    #                                                     - "--output-dir=./sqlmap_results"
-
-    # certcheck [DOMAIN]                                  - SSL certificate audit
-    
-    # === Monitoring ==========
-    # watchfolder [PATH]                                  - Directory change detection
-    # regmon                                              - Windows registry monitor
-    
-    # === Utilities ===========
-    # update                                              - Check for DST updates
-    # help                                                - Show this menu
-    # exit                                                - Quit terminal
-    # clear                                               - Cleaning up your terminal previous commands
-    # clear terminal                                      - Cleaning up your terminal history commands
-    # shutdown                                            - Emergency shutting down
-    # shutdown now                                        - To shutdown your machine immediately
-
-    # ===🔐 ENCRYPTION COMMANDS:
-    # encrypt <file>                                      - Encrypt a file
-    # decrypt <file.enc>                                  - Decrypt a file
-    # crypto-list                                         - List all encrypted files
-    # crypto-info <file.enc>                              - Show encryption info
-    # crypto-verify                                       - Verify encryption system
-    # crypto-backup                                       - Backup encryption key
-    # encrypt-test                                        - Run encryption test
-    # encrypt-setup                                       - Setup encryption system
-  
-    # ===📁 FILE COMMANDS:
-    # ls                                                  - List files
-    # cat <file>                                          - Show file contents
-    # touch <file>                                        - Create file
-    # echo <text> > <file>                                - Write to file
-    # pwd                                                 - Show current directory
-  
-    # ⚡ SECURITY COMMANDS:
-    # sysinfo                                             - System information
-    # metasploit                                          - Launch Metasploit
-    # tor-start                                           - Start Tor proxy
-    # tor-check                                           - Check Tor connection
-    # """
-    #     print(help_text)
-
-# ==================== HELP MENU ====================
-    # def show_help(self):
-    #     """Display interactive hacking-styled help menu with categories"""
-    
-    # # Clear screen and show loading animation
-    #     self._cinematic_box("LOADING COMMAND DATABASE", seconds=2)
-    
-    #     terminal_width = shutil.get_terminal_size((80, 20)).columns
-    
-    # # Help menu categories with commands
-    #     categories = {
-    #         "🔥 CORE SECURITY": [
-    #             ("system scan -All", "System threat scan (sys, apps, net)"),
-    #             ("net -n mon", "Live network monitoring"),
-    #             ("exploitcheck", "Check for critical CVEs"),
-    #             ("vtscan", "VirusTotal file analysis"),
-    #             ("clearlogs", "Securely wipe system logs"),
-    #             ("nikto --url <TARGET>", "Web vulnerability scan"),
-    #             ("legitify --github <ORG/REPO>", "Scan GitHub for misconfigs")
-    #         ],
-        
-    #         "🌐 NETWORK TOOLS": [
-    #             ("portsweep [IP]", "Scan target for open ports"),
-    #             ("traceroute [IP]", "Network path analysis"),
-    #             ("torify", "Route traffic through Tor"),
-    #             ("dnssec [DOMAIN]", "Validate DNSSEC")
-    #         ],
-        
-    #         "🔍 FORENSICS & FINANCIAL": [
-    #             ("memdump", "Capture volatile memory"),
-    #             ("hashfile [PATH]", "Generate file integrity hashes"),
-    #             ("stegcheck [IMG]", "Detect hidden image data"),
-    #             ("ransomwatch", "Identify ransomware indicators"),
-    #             ("finanalyze", "Analyze suspicious transactions"),
-    #             ("transfertrace", "Trace transaction flows")
-    #         ],
-        
-    #         "⚙️ SYSTEM MANAGEMENT": [
-    #             ("sysinfo", "Detailed system report"),
-    #             ("killproc PID", "Terminate process"),
-    #             ("macspoof [IFACE]", "Randomize MAC address"),
-    #             ("harden -t sys", "Apply security hardening"),
-    #             ("update", "Check for DST updates"),
-    #             ("shutdown", "Emergency shutdown"),
-    #             ("shutdown now", "Immediate machine shutdown")
-    #         ],
-        
-    #         "🔐 CRYPTO TOOLS": [
-    #             ("encrypt FILE", "AES-256 file encryption"),
-    #             ("decrypt FILE KEY", "File decryption"),
-    #             ("crypto-list", "List encrypted files"),
-    #             ("crypto-info <file.enc>", "Show encryption info"),
-    #             ("crypto-verify", "Verify encryption system"),
-    #             ("crypto-backup", "Backup encryption key"),
-    #             ("encrypt-test", "Run encryption test"),
-    #             ("encrypt-setup", "Setup encryption system")
-    #         ],
-        
-    #         "🌍 WEB SECURITY": [
-    #             ("sqlmap [URL]", "SQL injection scan"),
-    #             ("certcheck [DOMAIN]", "SSL certificate audit")
-    #         ],
-        
-    #         "📊 MONITORING": [
-    #             ("watchfolder [PATH]", "Directory change detection"),
-    #             ("regmon", "Windows registry monitor")
-    #         ],
-        
-    #         "📁 FILE COMMANDS": [
-    #             ("ls", "List files"),
-    #             ("cat <file>", "Show file contents"),
-    #             ("touch <file>", "Create file"),
-    #             ("echo <text> > <file>", "Write to file"),
-    #             ("pwd", "Show current directory")
-    #         ],
-        
-    #         "🛠️ UTILITIES": [
-    #             ("help", "Show this menu"),
-    #             ("exit", "Quit terminal"),
-    #             ("clear", "Clear terminal display"),
-    #             ("clear terminal", "Clear terminal history")
-    #         ]
-    #     }
-    
-    # # Create header with glitch effect
-    #     header = f"""
-    # {Fore.RED}╔{'═' * (terminal_width-2)}╗{Style.RESET_ALL}
-    # {Fore.RED}║{Fore.CYAN}{'DSTerminal v3.0 - Command Reference Manual'.center(terminal_width-2)}{Fore.RED}║{Style.RESET_ALL}
-    # {Fore.RED}║{Fore.YELLOW}{'INTERACTIVE COMMAND MENU'.center(terminal_width-2)}{Fore.RED}║{Style.RESET_ALL}
-    # {Fore.RED}╠{'═' * (terminal_width-2)}╣{Style.RESET_ALL}"""
-    
-    #     print(header)
-    
-    # # Display each category in a colored box
-    #     for category, commands in categories.items():
-    #     # Random color for each category
-    #         cat_colors = [Fore.CYAN, Fore.GREEN, Fore.YELLOW, Fore.MAGENTA, Fore.BLUE, Fore.RED]
-    #         cat_color = random.choice(cat_colors)
-        
-    #     # Category header with blinking effect for important ones
-    #         if "CORE" in category or "SECURITY" in category:
-    #             blink = self.blink
-    #         else:
-    #             blink = ""
-        
-    #         print(f"\n{cat_color}┌─{blink}{category}{self.blink_off}{'─' * (terminal_width- len(category)- 6)}{cat_color}┐{Style.RESET_ALL}")
-        
-    #     # Display commands in two columns for better readability
-    #         mid_point = len(commands) // 2 + len(commands) % 2
-        
-    #         for i in range(mid_point):
-    #             left_idx = i
-    #             right_idx = i + mid_point
-            
-    #             left_cmd, left_desc = commands[left_idx]
-            
-    #         # Color code commands based on risk/type
-    #             if "scan" in left_cmd or "exploit" in left_cmd:
-    #                 cmd_color = Fore.RED
-    #             elif "encrypt" in left_cmd or "crypto" in left_cmd:
-    #                 cmd_color = Fore.MAGENTA
-    #             elif "net" in left_cmd or "portsweep" in left_cmd:
-    #                 cmd_color = Fore.CYAN
-    #             else:
-    #                 cmd_color = Fore.GREEN
-            
-    #         # Format left column
-    #             left_line = f"{cat_color}│{Style.RESET_ALL} {cmd_color}{left_cmd:<25}{Style.RESET_ALL} {Fore.WHITE}{left_desc:<35}{Style.RESET_ALL}"
-            
-    #         # Format right column if exists
-    #             if right_idx < len(commands):
-    #                 right_cmd, right_desc = commands[right_idx]
-                
-    #                 if "scan" in right_cmd or "exploit" in right_cmd:
-    #                     r_cmd_color = Fore.RED
-    #                 elif "encrypt" in right_cmd or "crypto" in right_cmd:
-    #                     r_cmd_color = Fore.MAGENTA
-    #                 elif "net" in right_cmd or "portsweep" in right_cmd:
-    #                     r_cmd_color = Fore.CYAN
-    #                 else:
-    #                     r_cmd_color = Fore.GREEN
-                
-    #                 right_line = f" {r_cmd_color}{right_cmd:<25}{Style.RESET_ALL} {Fore.WHITE}{right_desc:<35}{Style.RESET_ALL}"
-    #             else:
-    #                 right_line = ""
-            
-    #         # Print the combined line with typing effect for first few commands
-    #             if i < 3:  # Typing effect for first 3 commands
-    #                 for char in left_line + right_line:
-    #                     print(char, end='', flush=True)
-    #                     time.sleep(0.001)
-    #                 print()
-    #             else:
-    #                 print(left_line + right_line)
-        
-    #     # Category footer with random matrix line
-    #         matrix_line = "".join(random.choice("01") for _ in range(terminal_width-20))
-    #         print(f"{cat_color}└─{Fore.GREEN}{matrix_line[:terminal_width-30]}{cat_color}─┘{Style.RESET_ALL}")
-    #         time.sleep(0.3)  # Pause between categories
-    
-    # # Footer with interactive elements
-    #     print(f"\n{Fore.RED}╠{'═' * (terminal_width-2)}╣{Style.RESET_ALL}")
-    
-    # # Interactive search prompt
-    #     print(f"{Fore.RED}║{Fore.YELLOW} 🔍 SEARCH COMMANDS: [Type command name or 'exit' to close]{Fore.RED} ║{Style.RESET_ALL}")
-    #     print(f"{Fore.RED}╠{'═' * (terminal_width-2)}╣{Style.RESET_ALL}")
-    
-    # # Quick tips in a matrix-style panel
-    #     tips = [
-    #         ("💡 TIP:", "Use Tab for command completion"),
-    #         ("⚡ PRO:", "Combine commands with '&&'"),
-    #         ("🔧 DEV:", "Check /var/log/dsterminal for logs"),
-    #         ("🌐 WEB:", "Access web interface at http://localhost:8080")
-    #     ]
-    
-    #     for icon, tip in tips:
-    #         color = random.choice([Fore.CYAN, Fore.GREEN, Fore.YELLOW])
-    #         print(f"{Fore.RED}║{Style.RESET_ALL} {color}{icon}{Style.RESET_ALL} {Fore.WHITE}{tip:<{terminal_width-15}}{Fore.RED}║{Style.RESET_ALL}")
-    
-    #     print(f"{Fore.RED}╚{'═' * (terminal_width-2)}╝{Style.RESET_ALL}")
-    
-    # # Interactive command search
-    #     while True:
-    #         print(f"\n{Fore.CYAN}┌─[{Fore.GREEN}HELP{Fore.CYAN}]─[{Fore.YELLOW}search{Fore.CYAN}]")
-    #         search = input(f"{Fore.CYAN}└─$ {Style.RESET_ALL}").strip().lower()
-        
-    #         if search == "exit" or search == "q":
-    #             break
-        
-    #         if search:
-    #             found = False
-    #             print(f"\n{Fore.YELLOW}🔍 Search results for '{search}':{Style.RESET_ALL}")
-    #             print(f"{Fore.CYAN}{'─' * 50}{Style.RESET_ALL}")
-            
-    #         # Search through all commands
-    #             for category, commands in categories.items():
-    #                 for cmd, desc in commands:
-    #                     if search in cmd.lower() or search in desc.lower():
-    #                         found = True
-    #                         print(f"{Fore.GREEN}✓ {cmd:<25}{Style.RESET_ALL} {Fore.WHITE}{desc}{Style.RESET_ALL}")
-            
-    #             if not found:
-    #                 print(f"{Fore.RED}✗ No commands found matching '{search}'{Style.RESET_ALL}")
-            
-    #             print(f"{Fore.CYAN}{'─' * 50}{Style.RESET_ALL}")
-    
-    # # Exit animation
-    #     self._type_print(f"{Fore.GREEN}[✓] Help system initialized{Style.RESET_ALL}")
-
-
 # ==================== HELP MENU ====================
     def show_help(self):
         """Display interactive hacking-styled help menu with categories"""
@@ -5951,7 +5973,10 @@ class SecurityTerminal:
                 ("finanalyze", "Analyze suspicious transactions"),
                 ("transfertrace", "Trace transaction flows"),
                 ("recon", "Run comprehensive information reconnaissance scan"),
-                ("recon -full", "Run full recon with additional checks")
+                ("recon -full", "Run full recon with additional checks"),
+                ("viewlogs", "View recent system logs"),
+                ("regmon", "Monitor Windows registry changes"),
+                ("sessiondump", "Dump active user sessions")
             ],
         
             "⚙️ SYSTEM MANAGEMENT": [
@@ -6010,7 +6035,7 @@ class SecurityTerminal:
     
     # Create header
         print(f"\n{Fore.RED}╔{'═' * (terminal_width-2)}╗{Style.RESET_ALL}")
-        print(f"{Fore.RED}║{Fore.CYAN}{'DSTerminal v2.0.59 - Command Reference Manual'.center(terminal_width-2)}{Fore.RED}║{Style.RESET_ALL}")
+        print(f"{Fore.RED}║{Fore.CYAN}{'DSTerminal v2.1.0 - Command Reference Manual'.center(terminal_width-2)}{Fore.RED}║{Style.RESET_ALL}")
         print(f"{Fore.RED}║{Fore.YELLOW}{'INTERACTIVE COMMAND MENU'.center(terminal_width-2)}{Fore.RED}║{Style.RESET_ALL}")
         print(f"{Fore.RED}╠{'═' * (terminal_width-2)}╣{Style.RESET_ALL}")
     
@@ -6055,15 +6080,23 @@ class SecurityTerminal:
                     cmd_color = Fore.YELLOW
                 elif "ls" in cmd or "cat" in cmd or "touch" in cmd:
                     cmd_color = Fore.BLUE   
+                elif "viewlogs" in cmd or "sessiondump" in cmd:
+                    cmd_color = Fore.MAGENTA + Style.BRIGHT  # Forensics in bright magenta
+                elif "sessiondump" in cmd or "viewlogs" in cmd:
+                    cmd_color = Fore.MAGENTA + Style.BRIGHT  # Forensics commands in bright magenta
                 elif "recon" in cmd or "enum" in cmd:
                     cmd_color = Fore.GREEN + Style.BRIGHT  # Recon commands in bright green
+                elif "regmon" in cmd or "watchfolder" in cmd:
+                    cmd_color = Fore.YELLOW + Style.BRIGHT  # Monitoring commands in bright yellow
+                elif "sysinfo" in cmd or "killproc" in cmd or "harden" in cmd:
+                    cmd_color = Fore.CYAN + Style.BRIGHT  # System management in bright cyan
                 else:
                     cmd_color = Fore.GREEN
             
             # Format the line with proper spacing
                 line = f"{cat_color}│{Style.RESET_ALL} {cmd_color}{cmd:<30}{Style.RESET_ALL} {Fore.WHITE}{desc:<{terminal_width-45}}{Style.RESET_ALL}{cat_color}│{Style.RESET_ALL}"
                 print(line[:terminal_width])
-                time.sleep(1.01)  # Slight typing effect
+                time.sleep(0.09)  # Slight typing effect
         
         # Category footer
             print(f"{cat_color}└{'─' * (terminal_width-2)}┘{Style.RESET_ALL}")
@@ -6076,7 +6109,7 @@ class SecurityTerminal:
             ("💡 TIP:", "Use Tab for command completion", Fore.CYAN),
             ("⚡ PRO:", "Combine commands with '&&'", Fore.GREEN),
             ("🔧 DEV:", "Check /var/log/dsterminal for logs", Fore.YELLOW),
-            ("🌐 WEB:", "Access web interface at http://localhost:8080", Fore.MAGENTA)
+            ("🌐 WEB:", "Access web interface at https://www.dsterminal.com", Fore.MAGENTA)
         ]
     
         for icon, tip, color in tips:
@@ -6133,20 +6166,84 @@ class SecurityTerminal:
         print(f"{Fore.GREEN}[✓] Help system closed{Style.RESET_ALL}")
 # --------------------help menu ends here from above========================
 # =============================END==========================================
+#     def run(self):
+#             self.print_banner()
+#             while True:
+#                 try:
+#                         prompt_text = HTML('<ansigreen><b>[-- DFFENEX</b></ansigreen>'
+#                                '<ansiblue>@</ansiblue>'
+#                                '<ansigreen><b>DSTerminal</b></ansigreen> '
+#                                '<ansired>]-[]</ansired> ')
+#                         user_input = self.session.prompt(prompt_text)
+#                         self.handle_command(user_input.strip())
+#                 except KeyboardInterrupt:
+#                     print("\n[*] Use 'exit' to quit")
+#                 except Exception as e:
+#                     print(f"[!] Error: {str(e)}")
+
+# if __name__ == "__main__":
+#     terminal = SecurityTerminal()
+#     terminal.run()
+
     def run(self):
-            self.print_banner()
-            while True:
-                try:
-                        prompt_text = HTML('<ansigreen><b>[-- DFFENEX</b></ansigreen>'
-                               '<ansiblue>@</ansiblue>'
-                               '<ansigreen><b>DSTerminal</b></ansigreen> '
-                               '<ansired>]-[]</ansired> ')
-                        user_input = self.session.prompt(prompt_text)
-                        self.handle_command(user_input.strip())
-                except KeyboardInterrupt:
-                    print("\n[*] Use 'exit' to quit")
-                except Exception as e:
-                    print(f"[!] Error: {str(e)}")
+        self.initialize_operator_session()   # ← ADD THIS
+        self.print_banner()
+        self.session = PromptSession()
+        while True:
+            try:
+            # Real SOC terminal components:
+            # [TIMESTAMP] [HOSTNAME] [ENV] [SEVERITY] [SESSION] USER@TERMINAL>
+            
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                hostname = socket.gethostname()
+                env = "PROD"  # or "DEV", "STAGING", "INCIDENT"
+            
+            # Dynamic severity based on context
+                if hasattr(self, 'current_incident') and self.current_incident:
+                    severity = f"<ansired>CRITICAL</ansired>"
+                elif hasattr(self, 'active_threats') and self.active_threats > 0:
+                    severity = f"<ansiyellow>HIGH</ansiyellow>"
+                else:
+                    severity = f"<ansigreen>NORMAL</ansigreen>"
+            
+            # Session/ticket tracking
+                session_id = getattr(self, 'session_id', 'SOC001')
+                session_id = self.session_id
+            
+            # Build the SOC prompt
+                prompt_text = HTML(
+                    f"<ansiwhite>[{timestamp}]</ansiwhite> "
+                    f"<ansicyan>{hostname}</ansicyan> "
+                    f"<ansiyellow>[{env}]</ansiyellow> "
+                    f"{severity} "
+                    f"<ansimagenta>[{session_id}]</ansimagenta>\n"
+                    f"<ansigreen>🔹 {self.operator_username}</ansigreen> "
+                    f"<ansiwhite>@</ansiwhite> "
+                    f"<ansiblue>soc-terminal</ansiblue> "
+                    f"<ansiwhite>:</ansiwhite> "
+                    f"<ansired>~$ </ansired>"
+                )
+            
+                user_input = self.session.prompt(prompt_text)
+ 
+                self.log_command(user_input)
+                # Log the command to SIEM
+                self.log_to_siem(f"Command executed: {user_input}")
+                # Detect exit command
+                if user_input.lower() == "exit":
+                    self.save_session_end()
+                    print_formatted_text(HTML("<ansiyellow>[+] Operator session closed. Log saved.</ansiyellow>"))
+                    break
+
+                # Handle normal commands
+                self.handle_command(user_input.strip())
+            
+            except KeyboardInterrupt:
+                print("\n[!] Use 'exit' to quit or 'help' for commands")
+            except Exception as e:
+                print(f"[!] SOC Terminal Error: {str(e)}")
+            # Log to SIEM
+                self.log_to_siem(f"Terminal error: {str(e)}")
 
 if __name__ == "__main__":
     terminal = SecurityTerminal()
