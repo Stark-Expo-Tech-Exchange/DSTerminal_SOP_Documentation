@@ -1,6 +1,6 @@
 import os
 from turtle import color
-
+# import recon
 # ===============================
 # Cross-platform terminal support
 # ===============================
@@ -42,8 +42,11 @@ from datetime import datetime, timedelta
 from cryptography.fernet import Fernet
 
 from prompt_toolkit import PromptSession, HTML
-from prompt_toolkit.history import FileHistory
+from prompt_toolkit import PromptSession
+from prompt_toolkit.completion import NestedCompleter
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from prompt_toolkit.history import FileHistory
+
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.shortcuts import print_formatted_text
@@ -71,7 +74,7 @@ from rich.columns import Columns
 from edu_typing_engine import EducationTypingEngine
 from cryptography.hazmat.primitives import serialization
 import cryptography
-
+from prompt_toolkit.completion import WordCompleter
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import (
@@ -620,7 +623,7 @@ class SecurityTerminal:
         self.typewriter("✔ Logging Enabled\n", 0.05)
         time.sleep(1)
 
-        self.typewriter(f" 🛡️, 🌐 ⚡YOUR UNIQUE OPERATOR SESSION USERNAME IS: {username}\n", 0.04)
+        self.typewriter(f" 🛡️, 🌐 ⚡ YOUR UNIQUE OPERATOR SESSION USERNAME IS: {username}\n", 0.04)
 
         # Ensure total animation lasts about 10 seconds
         elapsed = time.time() - start_time
@@ -807,27 +810,71 @@ class SecurityTerminal:
         """Initialize terminal settings"""
         self.log_file = "security_harden.log"
         self.setup_logging()
- 
-        self.session = PromptSession(
-            history=FileHistory('.dst_history'),
-            auto_suggest=AutoSuggestFromHistory(),
-            completer=WordCompleter([
-                'system scan -All', 'clear', 'clear terminal', 'transfertrace', 'metasploit', 'nmap', 'transfer', 
-                'legitify', 'nikto', 'nikto --url [TARGET URL HERE] -p (port number here) -o [output file e.g report.txt]', 'net -n mon', 'harden -t sys', 'vt-scan',
-                'registry -n mon', 'crypto-list', 'encrypted-files', 'cls', 'crypto-info', 'nmap',
-                'memdump', 'update', 'help', 'exit', 'clearlogs', 'crypto-verify', 'crypto-backup', 'encrypt-test',
-                'portsweep', 'hashfile', 'sysinfo', 'killproc',
-                'check integrity', 'encrypt', 'decrypt', 'watchfolder',
-                'traceroute', 'exploitcheck', 'macspoof', 'dnssec',
-                'sqlmap', 'ransomwatch', 'wificrack', 'stegcheck',
-                'certcheck', 'torify', 'recon', 'recon --url [TARGET URL HERE] -o [output file e.g report.txt]', 'recon -full <TARGET>', 'msf', 'encrypt-setup', 'crypto-init', 'crypto-status', 'mkdir', 'cd', 'touch', 'cat'
-            ]),
-            bottom_toolbar=HTML('<b>DSTerminal</b> v{} | Mode: <style bg="{}">{}</style>').format(
-                CONFIG['CURRENT_VERSION'],
-                "ansired" if self.is_admin() else "ansigreen",
-                "ADMIN" if self.is_admin() else "USER"
-            )
-        )
+
+        COMMANDS = {
+            "recon": {
+                "-full": None
+            },
+            "net": {
+                "-n": {
+                    "mon": None
+            }
+        },
+        "system": {
+            "scan": {
+                "-All": None
+            }
+        },
+        "nikto": None,
+        "nmap": None,
+        "transfertrace": None,
+        "certcheck": None,
+        "metasploit": None,
+        "msf": None,
+        "sqlmap": None,
+        "torify": None,
+        "crypto-list": None,
+        "crypto-info": None,
+        "crypto-init": None,
+        "crypto-status": None,
+        "crypto-backup": None,
+        "vt-scan": None,
+        "ransomwatch": None,
+        "dnssec": None,
+        "traceroute": None,
+        "exploitcheck": None,
+        "portsweep": None,
+        "hashfile": None,
+        "memdump": None,
+        "sysinfo": None,
+        "killproc": None,
+        "encrypt": None,
+        "decrypt": None,
+        "encrypt-test": None,
+        "encrypt-setup": None,
+        "watchfolder": None,
+        "check": {
+            "integrity": None
+        },
+        "registry": {
+            "-n": {
+                "mon": None
+            }
+        },
+        "clear": None,
+        "cls": None,
+        "clearlogs": None,
+        "update": None,
+        "help": None,
+        "exit": None,
+        "mkdir": None,
+        "cd": None,
+        "touch": None,
+        "cat": None,
+         "certcheck": None
+            
+        }
+    
         self.cipher = Fernet(CONFIG['ENCRYPT_KEY'].encode())
         self.scan_complete = Event()
         self.scan_progress = 0
@@ -912,7 +959,7 @@ class SecurityTerminal:
         "",
         "╠══════════════════════════════════════════════════════════════============══════╣",
         f"║    Defensive Security Terminal v2.1.0 | {platform.system()} {platform.release()}   ║",
-        "║    Developed by: Spark Wilson Spink | © 2024| Powered by Stark Expo Tech Exchange║",
+        "║    Developed by: Spark Wilson Spink | © 2024 | Powered by Stark Expo Tech Exchange║",
         "║    Type 'help' for available commands                                            ║",
         f"║ (🔍, ⚡, 🛡️) 🌐 ⚡ CLI Mode: {'ADMIN' if self.is_admin() else 'USER'}               ",
         "╚════════════════════════════════════════════════════════════════════============══╝"
@@ -1833,7 +1880,7 @@ class SecurityTerminal:
 
         results = self.generate_scan_results(stage_name)
 
-        table = Table(title=stage_name, header_style="bold magenta")
+        table = RichTable(title=stage_name, header_style="bold magenta")
         table.add_column("Check", style="cyan", width=25)
         table.add_column("Result", width=30)
         table.add_column("Status", width=12)
@@ -1912,7 +1959,7 @@ class SecurityTerminal:
     # Generate connection table
     # ----------------------------
         def generate_connection_table(connections):
-            table = Table()
+            table = RichTable()
 
             table.add_column("LOCAL", style="cyan")
             table.add_column("→", justify="center")
@@ -1979,6 +2026,7 @@ class SecurityTerminal:
         from reportlab.lib.units import inch
         from reportlab.platypus import Table as PDFTable
         from reportlab.platypus import TableStyle
+        from rich.table import Table as RichTable
         from reportlab.lib.styles import getSampleStyleSheet
 
         def export_forensic_report(connections, filename="forensic_report.pdf"):
@@ -2057,7 +2105,7 @@ class SecurityTerminal:
 
                     table = generate_connection_table(connections)
 
-                    stats = Table()
+                    stats = RichTable()
                     stats.add_column("Metric")
                     stats.add_column("Value")
 
@@ -2076,7 +2124,7 @@ class SecurityTerminal:
                     for alert in alerts:
                         console.print(f"[bold red]⚠ INTRUSION ALERT: {alert}")
 
-                    dashboard = Table.grid(expand=True)
+                    dashboard = RichTable.grid(expand=True)
                     dashboard.add_row(bandwidth_panel)
                     dashboard.add_row(
                         Panel(
@@ -4242,7 +4290,7 @@ class SecurityTerminal:
 
     def _styled_table(self, data):
 
-        table = Table(data, colWidths=[180, 320])
+        table = RichTable(data, colWidths=[180, 320])
 
         style = TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), lightgrey),
@@ -5679,11 +5727,11 @@ class SecurityTerminal:
                     print("Usage: recon -full <target>")
                     return
                 target = args[1]
-                os.system(f"{sys.executable} recon_full.py {target}")
+                # Use sys.executable for cross-platform Python call
+                subprocess.run([sys.executable, "recon_full.py", target])
             else:
                 target = args[0]
-                os.system(f"{sys.executable} recon.py {target}")
-            return
+                subprocess.run([sys.executable, "recon.py", target])
 
         elif cmd == "encrypt-test":
             self.handle_encrypt_test(args)
@@ -5918,7 +5966,7 @@ class SecurityTerminal:
             sys.exit(0)
         else: 
             print("[!] Unknown command. Type 'help' for more command options.")
-            self.show_tip(cmd)  # <-- Add this line at the end
+            self.show_tip(cmd)
 
 # ==================== HELP MENU ====================
     def show_help(self):
@@ -6188,7 +6236,71 @@ class SecurityTerminal:
     def run(self):
         self.initialize_operator_session()   # ← ADD THIS
         self.print_banner()
-        self.session = PromptSession()
+        
+        # Define available commands for autocompletion
+        COMMANDS = {
+            "system": {"scan": None, "info": None},
+            "net": {"mon": None, "scan": None},
+            "encrypt": None,
+            "decrypt": None,
+            "nmap": None,
+            "msf": None,
+            "sqlmap": None,
+            "certcheck": None,
+            "exploitcheck": None,
+            "macspoof": None,
+            "clearlogs": None,
+            "portsweep": None,
+            "hashfile": None,
+            "sysinfo": None,
+            "killproc": None,
+            "check": {"integrity": None},
+            "watchfolder": None,
+            "traceroute": None,
+            "ransomwatch": None,
+            "wificrack": None,
+            "stegcheck": None,
+            "memdump": None,
+            "torify": None,
+            "update": None,
+            "vt-scan": None,
+            "crypto-list": None,
+            "crypto-info": None,
+            "crypto-verify": None,
+            "crypto-backup": None,
+            "encrypt-test": None,
+            "encrypt-setup": None,
+            "crypto-status": None,
+            "nikto": None,
+            "legitify": None,
+            "trufflehog": None,
+            "recon": None,
+            "ls": None,
+            "cd": None,
+            "pwd": None,
+            "cat": None,
+            "echo": None,
+            "mkdir": None,
+            "touch": None,
+            "clear": None,
+            "help": None,
+            "exit": None
+        }
+        
+        completer = NestedCompleter.from_nested_dict(COMMANDS)
+        self.session = PromptSession(
+            history=FileHistory('.dst_history'),
+            auto_suggest=AutoSuggestFromHistory(),
+            completer=completer,
+            complete_while_typing=True,
+            bottom_toolbar=HTML(
+                "<b>DSTerminal</b> v{} | Mode: <style bg='{}'>{}</style>"
+            ).format(
+                CONFIG["CURRENT_VERSION"],
+                "ansired" if self.is_admin() else "ansigreen",
+                "ADMIN" if self.is_admin() else "USER",
+            ),
+        )
         while True:
             try:
             # Real SOC terminal components:
@@ -6197,6 +6309,7 @@ class SecurityTerminal:
                 timestamp = datetime.now().strftime("%H:%M:%S")
                 hostname = socket.gethostname()
                 env = "PROD"  # or "DEV", "STAGING", "INCIDENT"
+            
             
             # Dynamic severity based on context
                 if hasattr(self, 'current_incident') and self.current_incident:
@@ -6225,7 +6338,6 @@ class SecurityTerminal:
                 )
             
                 user_input = self.session.prompt(prompt_text)
- 
                 self.log_command(user_input)
                 # Log the command to SIEM
                 self.log_to_siem(f"Command executed: {user_input}")
