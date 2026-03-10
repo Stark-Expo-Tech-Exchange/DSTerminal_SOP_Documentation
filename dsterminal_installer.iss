@@ -173,7 +173,7 @@ Filename: "schtasks"; Parameters: "/create /tn ""DSTerminal Update Check"" /tr "
 Filename: "schtasks"; Parameters: "/delete /tn ""DSTerminal Update Check"" /f"; Check: IsAdminInstallMode
 
 ; Clean up workspace (optional - user choice)
-Filename: "{cmd}"; Parameters: "/c rmdir /s /q ""{userappdata}\DSTerminal_Workspace"""; Flags: runhidden waituntilterminated; Check: RemoveWorkspaceCheck
+;Filename: "{cmd}"; Parameters: "/c rmdir /s /q ""{userappdata}\DSTerminal_Workspace"""; Flags: runhidden waituntilterminated; Check: RemoveWorkspaceCheck
 
 [Code]
 // Global variables
@@ -211,61 +211,6 @@ begin
       '    "update_channel": "stable"' + #13#10 +
       '  }' + #13#10 +
       '}', False);
-  end;
-end;
-
-// ========== UPDATE CHANNEL CONFIGURATION ==========
-procedure SaveUpdateChannel(channel: string);
-var
-  ConfigFile: string;
-  Content: string;
-begin
-  ConfigFile := ExpandConstant('{app}\config\update_channel.conf');
-  SaveStringToFile(ConfigFile, channel, False);
-end;
-
-procedure CurStepChanged(CurStep: TSetupStep);
-var
-  channel: string;
-begin
-  if CurStep = ssPostInstall then
-  begin
-    // Save selected update channel
-    case UpdateChannelPage.SelectedValueIndex of
-      0: channel := 'stable';
-      1: channel := 'beta';
-      2: channel := 'nightly';
-    end;
-    SaveUpdateChannel(channel);
-    
-    // Create version file
-    SaveStringToFile(ExpandConstant('{app}\version.txt'), '2.1.0', False);
-    
-    // Set up auto-update if selected
-    if IsTaskSelected('autoupdate') then
-    begin
-      SaveStringToFile(ExpandConstant('{app}\config\auto_update.conf'), 'enabled', False);
-    end;
-  end;
-end;
-
-// ========== UNINSTALL LOGIC ==========
-function RemoveWorkspaceCheck: Boolean;
-
-
-procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
-begin
-  if CurUninstallStep = usPostUninstall then
-  begin
-    if RemoveWorkspaceCheck then
-    begin
-      // Workspace will be removed by UninstallRun section
-      Log('Workspace data will be removed');
-    end
-    else
-    begin
-      Log('Workspace data preserved');
-    end;
   end;
 end;
 

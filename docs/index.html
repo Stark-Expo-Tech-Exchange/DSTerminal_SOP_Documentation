@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DSTerminal v2.1.0 - SOC Security Platform Documentation</title>
+    <title>DSTerminal v2.1.0 - Complete SOC Security Platform Documentation</title>
     <style>
         /* ===== ROOT VARIABLES - SOC/Cyber Theme ===== */
         :root {
@@ -585,6 +585,33 @@
             border-left-color: var(--success);
         }
 
+        /* ===== METER ===== */
+        .meter {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .meter-label {
+            width: 100px;
+            color: var(--text-secondary);
+        }
+
+        .meter-bar {
+            flex: 1;
+            height: 10px;
+            background: var(--bg-secondary);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .meter-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 5px;
+        }
+
         /* ===== THREAT INDICATOR ===== */
         .threat-indicator {
             display: inline-block;
@@ -610,58 +637,6 @@
             background: rgba(255, 56, 96, 0.2);
             color: var(--accent);
             border: 1px solid var(--accent);
-        }
-
-        /* ===== COVER PAGE STYLES ===== */
-        .cover-page {
-            text-align: center;
-            padding: 50px 0;
-        }
-
-        .cover-title {
-            color: var(--primary);
-            font-size: 48px;
-            text-transform: uppercase;
-            text-shadow: 0 0 30px var(--primary-glow);
-            margin: 20px 0;
-        }
-
-        .cover-subtitle {
-            color: var(--primary);
-            font-size: 32px;
-            margin: 10px 0;
-        }
-
-        .cover-version {
-            color: var(--primary);
-            font-size: 24px;
-            margin: 30px 0;
-        }
-
-        .cover-date {
-            color: var(--text-muted);
-            font-size: 14px;
-            margin: 20px 0;
-        }
-
-        .cover-ascii {
-            color: var(--primary);
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            line-height: 1.2;
-            white-space: pre;
-            text-align: center;
-            margin: 40px 0;
-        }
-
-        .cover-warning {
-            background: rgba(255, 128, 0, 0.1);
-            color: #ff8000;
-            padding: 20px;
-            border: 2px solid #ff8000;
-            font-size: 18px;
-            font-weight: bold;
-            margin: 40px 0;
         }
 
         /* ===== FOOTER ===== */
@@ -760,6 +735,25 @@
             70% { clip-path: inset(70% 0 15% 0); }
         }
 
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
         /* ===== RESPONSIVE DESIGN ===== */
         @media (max-width: 1024px) {
             .sidebar {
@@ -811,81 +805,75 @@
         <!-- ===== SIDEBAR NAVIGATION ===== -->
         <div class="sidebar">
             <div class="sidebar-header">
-                <h3>📖 USER GUIDE</h3>
+                <h3>Navigation</h3>
             </div>
             
             <div class="nav-section">
-                <div class="nav-section-title">Document Sections</div>
-                <div class="nav-item active" onclick="showSection('cover')">COVER PAGE</div>
-                <div class="nav-item" onclick="showSection('toc')">TABLE OF CONTENTS</div>
-                <div class="nav-item" onclick="showSection('section1')">1. INTRODUCTION</div>
-                <div class="nav-item" onclick="showSection('section2')">2. SYSTEM REQUIREMENTS</div>
-                <div class="nav-item" onclick="showSection('section3')">3. INSTALLATION GUIDE</div>
-                <div class="nav-item" onclick="showSection('section4')">4. GETTING STARTED</div>
-                <div class="nav-item" onclick="showSection('section5')">5. CORE COMMANDS</div>
-                <div class="nav-item" onclick="showSection('section6')">6. SECURITY MODULES</div>
-                <div class="nav-item" onclick="showSection('section7')">7. NETWORK OPERATIONS</div>
-                <div class="nav-item" onclick="showSection('section8')">8. CRYPTOGRAPHY</div>
-                <div class="nav-item" onclick="showSection('section9')">9. FORENSICS</div>
-                <div class="nav-item" onclick="showSection('section10')">10. SYSTEM HARDENING</div>
-                <div class="nav-item" onclick="showSection('section11')">11. INCIDENT RESPONSE</div>
-                <div class="nav-item" onclick="showSection('section12')">12. REPORTING</div>
-                <div class="nav-item" onclick="showSection('section13')">13. TROUBLESHOOTING</div>
-                <div class="nav-item" onclick="showSection('section14')">14. APPENDIX</div>
+                <div class="nav-section-title">Getting Started</div>
+                <div class="nav-item active" data-target="introduction">1. Introduction</div>
+                <div class="nav-item" data-target="requirements">2. System Requirements</div>
+                <div class="nav-item" data-target="installation">3. Installation</div>
+                <div class="nav-item" data-target="quickstart">4. Getting Started</div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Core Commands</div>
+                <div class="nav-item" data-target="core-commands">5. Core Commands</div>
+                <div class="nav-item" data-target="security-modules">6. Security Modules</div>
+                <div class="nav-item" data-target="network-ops">7. Network Operations</div>
+                <div class="nav-item" data-target="cryptography">8. Cryptography</div>
+                <div class="nav-item" data-target="forensics">9. Forensics</div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Advanced Operations</div>
+                <div class="nav-item" data-target="hardening">10. System Hardening</div>
+                <div class="nav-item" data-target="incident-response">11. Incident Response</div>
+                <div class="nav-item" data-target="reporting">12. Reporting</div>
+                <div class="nav-item" data-target="troubleshooting">13. Troubleshooting</div>
+                <div class="nav-item" data-target="appendix">14. Appendix</div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Reference</div>
+                <div class="nav-item" data-target="api">API Reference</div>
+                <div class="nav-item" data-target="commands">Command List</div>
+                <div class="nav-item" data-target="config">Configuration</div>
+                <div class="nav-item" data-target="changelog">Changelog</div>
             </div>
         </div>
 
         <!-- ===== MAIN CONTENT ===== -->
         <div class="content">
-            <!-- COVER PAGE -->
-            <div id="cover" class="content-section active">
-                <div class="cover-page">
-                    <div class="cover-title">DSTERMINAL</div>
-                    <div class="cover-subtitle">SECURITY OPERATIONS CENTER</div>
-                    <div class="cover-version">Version 2.1.0</div>
-                    <div class="cover-date">Document Generated: <span id="current-date"></span> UTC</div>
-                    <div class="cover-ascii">
-    ╔══════════════════════════════════════════════════════════╗
-    ║     ██████╗ ███████╗████████╗███████╗██████╗ ███╗   ███╗ ║
-    ║     ██╔══██╗██╔════╝╚══██╔══╝██╔════╝██╔══██╗████╗ ████║ ║
-    ║     ██║  ██║███████╗   ██║   █████╗  ██████╔╝██╔████╔██║ ║
-    ║     ██║  ██║╚════██║   ██║   ██╔══╝  ██╔══██╗██║╚██╔╝██║ ║
-    ║     ██████╔╝███████║   ██║   ███████╗██║  ██║██║ ╚═╝ ██║ ║
-    ║     ╚═════╝ ╚══════╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝ ║
-    ╚══════════════════════════════════════════════════════════╝
+            <!-- ===== INTRODUCTION SECTION ===== -->
+            <div id="introduction" class="content-section">
+                <h1 class="typing-effect">DSTerminal Documentation</h1>
+                <p class="text-glow">Version 2.1.0 | Security Operations Center Terminal</p>
+
+                <div class="info-panel alert-info">
+                    <div class="info-panel-title">SYSTEM STATUS</div>
+                    <div class="grid-2">
+                        <div>
+                            <p><strong>Platform:</strong> Windows/Linux/macOS</p>
+                            <p><strong>Python Version:</strong> 3.8+</p>
+                            <p><strong>Last Update:</strong> March 2024</p>
+                        </div>
+                        <div>
+                            <p><strong>Active Modules:</strong> 47</p>
+                            <p><strong>Security Tools:</strong> 23</p>
+                            <p><strong>Threat Intelligence:</strong> Active</p>
+                        </div>
                     </div>
-                    <div class="cover-warning">⚠️ FOR AUTHORIZED SECURITY PERSONNEL ONLY ⚠️</div>
+                    <div class="progress-container">
+                        <div class="progress-bar" style="width: 100%;"></div>
+                    </div>
                 </div>
-            </div>
 
-            <!-- TABLE OF CONTENTS -->
-            <div id="toc" class="content-section">
-                <h2>TABLE OF CONTENTS</h2>
-                <div style="margin: 20px 0; font-family: 'Courier New', monospace;">
-                    <div style="color: #00ccff; margin: 5px 0;">1. INTRODUCTION TO DSTERMINAL <span style="color: #808080;">........................................ 1</span></div>
-                    <div style="color: #00ccff; margin: 5px 0;">2. SYSTEM REQUIREMENTS <span style="color: #808080;">............................................. 2</span></div>
-                    <div style="color: #00ccff; margin: 5px 0;">3. INSTALLATION GUIDE <span style="color: #808080;">............................................. 3</span></div>
-                    <div style="color: #00ccff; margin: 5px 0;">4. GETTING STARTED <span style="color: #808080;">............................................... 4</span></div>
-                    <div style="color: #00ccff; margin: 5px 0;">5. CORE COMMANDS <span style="color: #808080;">................................................. 5</span></div>
-                    <div style="color: #00ccff; margin: 5px 0;">6. SECURITY MODULES <span style="color: #808080;">.............................................. 6</span></div>
-                    <div style="color: #00ccff; margin: 5px 0;">7. NETWORK OPERATIONS <span style="color: #808080;">............................................ 7</span></div>
-                    <div style="color: #00ccff; margin: 5px 0;">8. CRYPTOGRAPHY <span style="color: #808080;">.................................................. 8</span></div>
-                    <div style="color: #00ccff; margin: 5px 0;">9. FORENSICS <span style="color: #808080;">..................................................... 9</span></div>
-                    <div style="color: #00ccff; margin: 5px 0;">10. SYSTEM HARDENING <span style="color: #808080;">............................................. 10</span></div>
-                    <div style="color: #00ccff; margin: 5px 0;">11. INCIDENT RESPONSE <span style="color: #808080;">............................................. 11</span></div>
-                    <div style="color: #00ccff; margin: 5px 0;">12. REPORTING <span style="color: #808080;">.................................................... 12</span></div>
-                    <div style="color: #00ccff; margin: 5px 0;">13. TROUBLESHOOTING <span style="color: #808080;">.............................................. 13</span></div>
-                    <div style="color: #00ccff; margin: 5px 0;">14. APPENDIX <span style="color: #808080;">...................................................... 14</span></div>
-                </div>
-            </div>
-
-            <!-- SECTION 1: INTRODUCTION -->
-            <div id="section1" class="content-section">
-                <h2>1. INTRODUCTION TO DSTERMINAL</h2>
+                <h2>1. Introduction to DSTerminal</h2>
                 <p>DSTerminal is a comprehensive Security Operations Center (SOC) platform designed for defensive security professionals. It provides a unified terminal interface for threat detection, incident response, forensics, and system hardening operations.</p>
-                
-                <h3>Key Features:</h3>
-                <ul style="color: var(--text-secondary); margin-left: 20px;">
+
+                <h3>Key Features</h3>
+                <ul style="margin-left: 20px; color: var(--text-secondary);">
                     <li>• Real-time network monitoring with threat detection and geolocation</li>
                     <li>• AES-256 encryption for file protection and secure key management</li>
                     <li>• Memory forensics and volatile data analysis</li>
@@ -900,60 +888,86 @@
 
                 <h3>Component Status</h3>
                 <table class="command-table">
-                    <tr>
-                        <th>COMPONENT</th>
-                        <th>STATUS</th>
-                        <th>VERSION</th>
-                    </tr>
-                    <tr><td>DSTerminal Core</td><td><span style="color: #00ff9d;">● ONLINE</span></td><td>2.1.0</td></tr>
-                    <tr><td>Network Monitor</td><td><span style="color: #00ff9d;">● ACTIVE</span></td><td>2.1.0</td></tr>
-                    <tr><td>Encryption Module</td><td><span style="color: #00ff9d;">● READY</span></td><td>2.1.0</td></tr>
-                    <tr><td>Forensics Engine</td><td><span style="color: #00ff9d;">● LOADED</span></td><td>2.1.0</td></tr>
-                    <tr><td>API Gateway</td><td><span style="color: #00ff9d;">● CONNECTED</span></td><td>2.1.0</td></tr>
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Status</th>
+                            <th>Version</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>DSTerminal Core</td><td><span class="threat-indicator threat-low">● ONLINE</span></td><td>2.1.0</td></tr>
+                        <tr><td>Network Monitor</td><td><span class="threat-indicator threat-low">● ACTIVE</span></td><td>2.1.0</td></tr>
+                        <tr><td>Encryption Module</td><td><span class="threat-indicator threat-low">● READY</span></td><td>2.1.0</td></tr>
+                        <tr><td>Forensics Engine</td><td><span class="threat-indicator threat-low">● LOADED</span></td><td>2.1.0</td></tr>
+                        <tr><td>API Gateway</td><td><span class="threat-indicator threat-low">● CONNECTED</span></td><td>2.1.0</td></tr>
+                    </tbody>
                 </table>
             </div>
 
-            <!-- SECTION 2: SYSTEM REQUIREMENTS -->
-            <div id="section2" class="content-section">
-                <h2>2. SYSTEM REQUIREMENTS</h2>
-                
-                <h3>Hardware Requirements:</h3>
+            <!-- ===== SYSTEM REQUIREMENTS SECTION ===== -->
+            <div id="requirements" class="content-section" style="display: none;">
+                <h2>2. System Requirements</h2>
+
+                <h3>Hardware Requirements</h3>
                 <table class="command-table">
-                    <tr>
-                        <th>Component</th>
-                        <th>Minimum</th>
-                        <th>Recommended</th>
-                    </tr>
-                    <tr><td>Processor</td><td>Dual-core 2.0 GHz</td><td>Quad-core 3.0 GHz</td></tr>
-                    <tr><td>RAM</td><td>4 GB</td><td>16 GB</td></tr>
-                    <tr><td>Storage</td><td>500 MB</td><td>10 GB</td></tr>
-                    <tr><td>Network</td><td>100 Mbps</td><td>1 Gbps</td></tr>
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Minimum</th>
+                            <th>Recommended</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Processor</td><td>Dual-core 2.0 GHz</td><td>Quad-core 3.0 GHz</td></tr>
+                        <tr><td>RAM</td><td>4 GB</td><td>16 GB</td></tr>
+                        <tr><td>Storage</td><td>500 MB</td><td>10 GB</td></tr>
+                        <tr><td>Network</td><td>100 Mbps</td><td>1 Gbps</td></tr>
+                    </tbody>
                 </table>
 
-                <h3>Software Requirements:</h3>
+                <div class="meter">
+                    <span class="meter-label">CPU Usage</span>
+                    <div class="meter-bar"><div class="meter-fill" style="width: 15%;"></div></div>
+                    <span>15%</span>
+                </div>
+                <div class="meter">
+                    <span class="meter-label">Memory Usage</span>
+                    <div class="meter-bar"><div class="meter-fill" style="width: 25%;"></div></div>
+                    <span>25%</span>
+                </div>
+
+                <h3>Software Requirements</h3>
                 <table class="command-table">
-                    <tr>
-                        <th>Operating System</th>
-                        <th>Version</th>
-                    </tr>
-                    <tr><td>Windows</td><td>10/11 (64-bit)</td></tr>
-                    <tr><td>Linux</td><td>Ubuntu 20.04+, Debian 11+, Kali Linux</td></tr>
-                    <tr><td>macOS</td><td>12+ (Monterey+)</td></tr>
-                    <tr><td>Python</td><td>3.8 or higher</td></tr>
-                    <tr><td>Git</td><td>Latest version</td></tr>
-                    <tr><td>Nmap</td><td>7.80+ (optional)</td></tr>
-                    <tr><td>Metasploit</td><td>6.0+ (optional)</td></tr>
-                    <tr><td>sqlmap</td><td>1.6+ (optional)</td></tr>
+                    <thead>
+                        <tr>
+                            <th>Software</th>
+                            <th>Version</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Windows</td><td>10/11 (64-bit)</td></tr>
+                        <tr><td>Linux</td><td>Ubuntu 20.04+, Debian 11+, Kali Linux</td></tr>
+                        <tr><td>macOS</td><td>12+ (Monterey+)</td></tr>
+                        <tr><td>Python</td><td>3.8 or higher</td></tr>
+                        <tr><td>Git</td><td>Latest version</td></tr>
+                        <tr><td>Nmap</td><td>7.80+ (optional)</td></tr>
+                        <tr><td>Metasploit</td><td>6.0+ (optional)</td></tr>
+                        <tr><td>sqlmap</td><td>1.6+ (optional)</td></tr>
+                    </tbody>
                 </table>
+
+                <div class="alert alert-info">
+                    <strong>Note:</strong> Optional tools enhance functionality but are not required for basic operations.
+                </div>
             </div>
 
-            <!-- SECTION 3: INSTALLATION GUIDE -->
-            <div id="section3" class="content-section">
-                <h2>3. INSTALLATION GUIDE</h2>
-                
+            <!-- ===== INSTALLATION SECTION ===== -->
+            <div id="installation" class="content-section" style="display: none;">
+                <h2>3. Installation Guide</h2>
+
                 <h3>3.1 Windows Installation</h3>
                 <pre><code># DSTerminal Windows Installer
-
 1. Download DSTerminal_Installer_v2.1.0.exe from GitHub
 2. Run the installer (no administrator rights required)
 3. Follow the setup wizard to choose installation options
@@ -995,13 +1009,13 @@ pip3 install -r requirements.txt
 python3 dsterminal.py</code></pre>
             </div>
 
-            <!-- SECTION 4: GETTING STARTED -->
-            <div id="section4" class="content-section">
-                <h2>4. GETTING STARTED</h2>
-                
+            <!-- ===== QUICK START SECTION ===== -->
+            <div id="quickstart" class="content-section" style="display: none;">
+                <h2>4. Getting Started</h2>
+
                 <h3>4.1 First Launch</h3>
                 <p>When you first launch DSTerminal, you'll see the SOC banner and be assigned a unique operator ID. All your activities are logged for audit purposes in the workspace/operators directory.</p>
-                
+
                 <pre><code>[22:41:49] WILSON-SON [PROD] NORMAL [SOC-5BD39]
 🔹 OP-189EA9 @ soc-terminal : ~$ help
 
@@ -1014,67 +1028,80 @@ python3 dsterminal.py</code></pre>
 cd ~/DSTerminal_Workspace
 
 # Create standard directories
-mkdir operators
-mkdir scans
-mkdir reports
-mkdir exploits
-mkdir sandbox
-mkdir quarantine
+mkdir operators scans reports exploits sandbox quarantine
 
 # Verify workspace structure
 ls -la</code></pre>
+
+                <div class="alert alert-success">
+                    <strong>✓ Workspace Ready</strong> - Your DSTerminal environment is now properly configured.
+                </div>
             </div>
 
-            <!-- SECTION 5: CORE COMMANDS -->
-            <div id="section5" class="content-section">
-                <h2>5. CORE COMMANDS</h2>
-                
+            <!-- ===== CORE COMMANDS SECTION ===== -->
+            <div id="core-commands" class="content-section" style="display: none;">
+                <h2>5. Core Commands</h2>
+
                 <h3>5.1 File Operations</h3>
                 <table class="command-table">
-                    <tr>
-                        <th>Command</th>
-                        <th>Description</th>
-                    </tr>
-                    <tr><td><code>ls [path]</code></td><td>List directory contents</td></tr>
-                    <tr><td><code>cd &lt;directory&gt;</code></td><td>Change working directory</td></tr>
-                    <tr><td><code>pwd</code></td><td>Print current working directory</td></tr>
-                    <tr><td><code>mkdir &lt;name&gt;</code></td><td>Create new directory</td></tr>
-                    <tr><td><code>touch &lt;file&gt;</code></td><td>Create empty file</td></tr>
-                    <tr><td><code>cat &lt;file&gt;</code></td><td>Display file contents</td></tr>
-                    <tr><td><code>echo &lt;text&gt;</code></td><td>Display text</td></tr>
-                    <tr><td><code>echo &lt;text&gt; > &lt;file&gt;</code></td><td>Write text to file</td></tr>
-                    <tr><td><code>echo &lt;text&gt; >> &lt;file&gt;</code></td><td>Append text to file</td></tr>
+                    <thead>
+                        <tr>
+                            <th>Command</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>ls [path]</code></td><td>List directory contents</td></tr>
+                        <tr><td><code>cd &lt;directory&gt;</code></td><td>Change working directory</td></tr>
+                        <tr><td><code>pwd</code></td><td>Print current working directory</td></tr>
+                        <tr><td><code>mkdir &lt;name&gt;</code></td><td>Create new directory</td></tr>
+                        <tr><td><code>touch &lt;file&gt;</code></td><td>Create empty file</td></tr>
+                        <tr><td><code>cat &lt;file&gt;</code></td><td>Display file contents</td></tr>
+                        <tr><td><code>echo &lt;text&gt;</code></td><td>Display text</td></tr>
+                        <tr><td><code>echo &lt;text&gt; > &lt;file&gt;</code></td><td>Write text to file</td></tr>
+                        <tr><td><code>echo &lt;text&gt; >> &lt;file&gt;</code></td><td>Append text to file</td></tr>
+                    </tbody>
                 </table>
 
                 <h3>5.2 System Commands</h3>
                 <table class="command-table">
-                    <tr>
-                        <th>Command</th>
-                        <th>Description</th>
-                    </tr>
-                    <tr><td><code>sysinfo</code></td><td>Display detailed system information</td></tr>
-                    <tr><td><code>killproc &lt;PID&gt;</code></td><td>Terminate a process by ID</td></tr>
-                    <tr><td><code>update</code></td><td>Check for DSTerminal updates</td></tr>
-                    <tr><td><code>clear</code></td><td>Clear the terminal screen</td></tr>
-                    <tr><td><code>exit</code></td><td>Exit DSTerminal</td></tr>
-                    <tr><td><code>help</code></td><td>Show comprehensive help menu</td></tr>
-                    <tr><td><code>status</code></td><td>Display DSTerminal system status</td></tr>
+                    <thead>
+                        <tr>
+                            <th>Command</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>sysinfo</code></td><td>Display detailed system information</td></tr>
+                        <tr><td><code>killproc &lt;PID&gt;</code></td><td>Terminate a process by ID</td></tr>
+                        <tr><td><code>update</code></td><td>Check for DSTerminal updates</td></tr>
+                        <tr><td><code>clear</code></td><td>Clear the terminal screen</td></tr>
+                        <tr><td><code>exit</code></td><td>Exit DSTerminal</td></tr>
+                        <tr><td><code>help</code></td><td>Show comprehensive help menu</td></tr>
+                        <tr><td><code>status</code></td><td>Display DSTerminal system status</td></tr>
+                    </tbody>
                 </table>
             </div>
 
-            <!-- SECTION 6: SECURITY MODULES -->
-            <div id="section6" class="content-section">
-                <h2>6. SECURITY MODULES</h2>
-                
+            <!-- ===== SECURITY MODULES SECTION ===== -->
+            <div id="security-modules" class="content-section" style="display: none;">
+                <h2>6. Security Modules</h2>
+
+                <h3>6.1 System Security Scan</h3>
                 <div class="command-card">
                     <div class="command-header">
                         <span class="command-name">system scan -All</span>
                         <span class="command-badge">Core Security</span>
                     </div>
                     <div class="command-body">
-                        <div class="command-example">system scan -All [--quick] [--deep] [--output &lt;file&gt;]</div>
                         <div class="command-description">
-                            Performs comprehensive DSTerminal security scan including:
+                            Performs comprehensive system security scan including memory analysis, process inspection, file integrity checks, and network monitoring.
+                        </div>
+                        <div class="command-example">
+                            system scan -All [--quick] [--deep] [--output &lt;file&gt;]
+                        </div>
+                        <div class="command-description">
+                            <strong>Includes:</strong>
                             <ul style="margin-top: 10px;">
                                 <li>• Memory analysis and process inspection</li>
                                 <li>• File integrity verification</li>
@@ -1087,59 +1114,61 @@ ls -la</code></pre>
                     </div>
                 </div>
 
+                <h3>6.2 Exploit Detection</h3>
                 <div class="command-card">
                     <div class="command-header">
                         <span class="command-name">exploitcheck</span>
                         <span class="command-badge">Vulnerability Scanner</span>
                     </div>
                     <div class="command-body">
-                        <div class="command-example">exploitcheck</div>
                         <div class="command-description">
                             Checks for critical vulnerabilities:
-                            <ul style="margin-top: 10px;">
-                                <li>• CVE-2021-44228 - Log4j Remote Code Execution</li>
-                                <li>• CVE-2017-0144 - EternalBlue SMB Exploit</li>
-                                <li>• CVE-2021-3156 - Sudo Buffer Overflow</li>
-                                <li>• Local privilege escalation vectors</li>
-                                <li>• Kernel exploit detection</li>
-                            </ul>
                         </div>
+                        <pre><code>• CVE-2021-44228 - Log4j Remote Code Execution
+• CVE-2017-0144 - EternalBlue SMB Exploit
+• CVE-2021-3156 - Sudo Buffer Overflow
+• Local privilege escalation vectors
+• Kernel exploit detection</code></pre>
                     </div>
                 </div>
 
+                <h3>6.3 Integrity Verification</h3>
                 <div class="command-card">
                     <div class="command-header">
                         <span class="command-name">check integrity</span>
                         <span class="command-badge">File Verification</span>
                     </div>
                     <div class="command-body">
-                        <div class="command-example">check integrity</div>
                         <div class="command-description">
                             Verifies critical system files:
-                            <ul style="margin-top: 10px;">
-                                <li>• Windows: kernel32.dll, cmd.exe, powershell.exe</li>
-                                <li>• Linux: /bin/bash, /usr/bin/sudo, /bin/ls</li>
-                                <li>• macOS: /bin/bash, /usr/bin/sudo</li>
-                                <li>• Checks file sizes, modification times, and hashes</li>
-                            </ul>
                         </div>
+                        <pre><code>• Windows: kernel32.dll, cmd.exe, powershell.exe
+• Linux: /bin/bash, /usr/bin/sudo, /bin/ls
+• macOS: /bin/bash, /usr/bin/sudo
+• Checks file sizes, modification times, and hashes</code></pre>
                     </div>
                 </div>
             </div>
 
-            <!-- SECTION 7: NETWORK OPERATIONS -->
-            <div id="section7" class="content-section">
-                <h2>7. NETWORK OPERATIONS</h2>
-                
+            <!-- ===== NETWORK OPERATIONS SECTION ===== -->
+            <div id="network-ops" class="content-section" style="display: none;">
+                <h2>7. Network Operations</h2>
+
+                <h3>7.1 Real-time Network Monitor</h3>
                 <div class="command-card">
                     <div class="command-header">
                         <span class="command-name">net -n mon</span>
                         <span class="command-badge">Network Security</span>
                     </div>
                     <div class="command-body">
-                        <div class="command-example">net -n mon [--duration &lt;sec&gt;] [--export &lt;file&gt;] [--geoip]</div>
                         <div class="command-description">
-                            DSTerminal Network Monitoring Features:
+                            Real-time network monitoring with threat detection. Analyzes connections, bandwidth usage, and identifies suspicious activities.
+                        </div>
+                        <div class="command-example">
+                            net -n mon [--duration &lt;sec&gt;] [--export &lt;file&gt;] [--geoip]
+                        </div>
+                        <div class="command-description">
+                            <strong>Features:</strong>
                             <ul style="margin-top: 10px;">
                                 <li>• Live connection tracking with ESTABLISHED/LISTEN states</li>
                                 <li>• Bandwidth usage monitoring (upload/download)</li>
@@ -1147,7 +1176,6 @@ ls -la</code></pre>
                                 <li>• Threat scoring system (LOW/MEDIUM/HIGH)</li>
                                 <li>• Automated PDF forensic report generation</li>
                                 <li>• Intrusion detection alerts for port scans</li>
-                                <li>• ISP and country information for connections</li>
                             </ul>
                         </div>
                     </div>
@@ -1155,38 +1183,45 @@ ls -la</code></pre>
 
                 <h3>Threat Scoring System</h3>
                 <table class="command-table">
-                    <tr>
-                        <th>Threat Score</th>
-                        <th>Risk Level</th>
-                        <th>Indicator</th>
-                    </tr>
-                    <tr>
-                        <td>0-3 points</td>
-                        <td><span class="threat-indicator threat-low">LOW</span></td>
-                        <td>✓ (Green)</td>
-                    </tr>
-                    <tr>
-                        <td>4-6 points</td>
-                        <td><span class="threat-indicator threat-medium">MEDIUM</span></td>
-                        <td>⚠ (Yellow)</td>
-                    </tr>
-                    <tr>
-                        <td>7+ points</td>
-                        <td><span class="threat-indicator threat-high">HIGH</span></td>
-                        <td>✖ (Red)</td>
-                    </tr>
+                    <thead>
+                        <tr>
+                            <th>Threat Score</th>
+                            <th>Risk Level</th>
+                            <th>Indicator</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>0-3 points</td>
+                            <td><span class="threat-indicator threat-low">LOW</span></td>
+                            <td>✓ (Green)</td>
+                        </tr>
+                        <tr>
+                            <td>4-6 points</td>
+                            <td><span class="threat-indicator threat-medium">MEDIUM</span></td>
+                            <td>⚠ (Yellow)</td>
+                        </tr>
+                        <tr>
+                            <td>7+ points</td>
+                            <td><span class="threat-indicator threat-high">HIGH</span></td>
+                            <td>✖ (Red)</td>
+                        </tr>
+                    </tbody>
                 </table>
 
+                <h3>7.2 Port Scanning</h3>
                 <div class="command-card">
                     <div class="command-header">
                         <span class="command-name">portsweep</span>
                         <span class="command-badge">Port Scanner</span>
                     </div>
                     <div class="command-body">
-                        <div class="command-example">portsweep &lt;target&gt; [--ports range]</div>
+                        <div class="command-example">
+                            portsweep &lt;target&gt; [--ports range]
+                        </div>
                         <div class="command-description">
-                            DSTerminal port scanner scans:
-                            <ul style="margin-top: 10px;">
+                            <strong>Scans:</strong>
+                            <ul>
                                 <li>• Common ports: 21,22,23,25,53,80,110,135,139,143</li>
                                 <li>• Additional ports: 443,445,3389,8080,8443</li>
                                 <li>• Custom port ranges (e.g., --ports 1-1024)</li>
@@ -1196,16 +1231,19 @@ ls -la</code></pre>
                     </div>
                 </div>
 
+                <h3>7.3 Traceroute</h3>
                 <div class="command-card">
                     <div class="command-header">
                         <span class="command-name">traceroute</span>
                         <span class="command-badge">Network Path</span>
                     </div>
                     <div class="command-body">
-                        <div class="command-example">traceroute &lt;target&gt;</div>
+                        <div class="command-example">
+                            traceroute &lt;target&gt;
+                        </div>
                         <div class="command-description">
                             Network path analysis:
-                            <ul style="margin-top: 10px;">
+                            <ul>
                                 <li>• Traces route to target destination</li>
                                 <li>• Shows intermediate hops</li>
                                 <li>• Response time measurements</li>
@@ -1215,10 +1253,10 @@ ls -la</code></pre>
                 </div>
             </div>
 
-            <!-- SECTION 8: CRYPTOGRAPHY -->
-            <div id="section8" class="content-section">
-                <h2>8. CRYPTOGRAPHY</h2>
-                
+            <!-- ===== CRYPTOGRAPHY SECTION ===== -->
+            <div id="cryptography" class="content-section" style="display: none;">
+                <h2>8. Cryptography</h2>
+
                 <h3>8.1 DSTerminal Encryption System</h3>
                 <pre><code># Initialize encryption (first time only)
 encrypt-setup
@@ -1263,32 +1301,30 @@ encrypt-test</code></pre>
                         </ul>
                     </div>
                 </div>
-                <ul style="color: var(--text-secondary); margin-left: 20px;">
-                    <li>• Secure file deletion with multiple overwrite passes</li>
-                    <li>• File integrity verification with SHA-256 hashing</li>
-                    <li>• Encrypted file inventory management</li>
-                </ul>
 
                 <div class="alert alert-warning">
                     <strong>⚠️ IMPORTANT:</strong> Always backup your encryption keys. Lost keys cannot be recovered.
                 </div>
             </div>
 
-            <!-- SECTION 9: FORENSICS -->
-            <div id="section9" class="content-section">
-                <h2>9. FORENSICS</h2>
-                
+            <!-- ===== FORENSICS SECTION ===== -->
+            <div id="forensics" class="content-section" style="display: none;">
+                <h2>9. Forensics</h2>
+
+                <h3>9.1 Memory Forensics</h3>
                 <div class="command-card">
                     <div class="command-header">
                         <span class="command-name">memdump</span>
                         <span class="command-badge">Memory Analysis</span>
                     </div>
                     <div class="command-body">
-                        <div class="command-example">memdump [--output &lt;file&gt;]</div>
+                        <div class="command-example">
+                            memdump [--output &lt;file&gt;]
+                        </div>
                         <div class="command-description">
-                            DSTerminal Memory Forensics captures:
-                            <ul style="margin-top: 10px;">
-                                <li>• Running processes and their memory maps</li>
+                            <strong>Captures:</strong>
+                            <ul>
+                                <li>• Running processes and memory maps</li>
                                 <li>• Active network connections</li>
                                 <li>• Open file handles</li>
                                 <li>• Loaded kernel modules</li>
@@ -1299,16 +1335,19 @@ encrypt-test</code></pre>
                     </div>
                 </div>
 
+                <h3>9.2 Steganography Detection</h3>
                 <div class="command-card">
                     <div class="command-header">
                         <span class="command-name">stegcheck</span>
                         <span class="command-badge">Steganalysis</span>
                     </div>
                     <div class="command-body">
-                        <div class="command-example">stegcheck &lt;image_path&gt;</div>
+                        <div class="command-example">
+                            stegcheck &lt;image_path&gt;
+                        </div>
                         <div class="command-description">
-                            DSTerminal Steganalysis includes:
-                            <ul style="margin-top: 10px;">
+                            <strong>Analysis includes:</strong>
+                            <ul>
                                 <li>• Least Significant Bit (LSB) analysis</li>
                                 <li>• Entropy calculation and evaluation</li>
                                 <li>• Known steganography tool signatures</li>
@@ -1319,16 +1358,19 @@ encrypt-test</code></pre>
                     </div>
                 </div>
 
+                <h3>9.3 Ransomware Detection</h3>
                 <div class="command-card">
                     <div class="command-header">
                         <span class="command-name">ransomwatch</span>
                         <span class="command-badge">Ransomware Scanner</span>
                     </div>
                     <div class="command-body">
-                        <div class="command-example">ransomwatch</div>
+                        <div class="command-example">
+                            ransomwatch
+                        </div>
                         <div class="command-description">
-                            DSTerminal Ransomware Scanner detects:
-                            <ul style="margin-top: 10px;">
+                            <strong>Detects:</strong>
+                            <ul>
                                 <li>• Suspicious file extensions (.encrypted, .locked, .crypt)</li>
                                 <li>• Mass file encryption patterns</li>
                                 <li>• Ransom note creation</li>
@@ -1340,20 +1382,23 @@ encrypt-test</code></pre>
                 </div>
             </div>
 
-            <!-- SECTION 10: SYSTEM HARDENING -->
-            <div id="section10" class="content-section">
-                <h2>10. SYSTEM HARDENING</h2>
-                
+            <!-- ===== SYSTEM HARDENING SECTION ===== -->
+            <div id="hardening" class="content-section" style="display: none;">
+                <h2>10. System Hardening</h2>
+
+                <h3>10.1 DSTerminal Hardening</h3>
                 <div class="command-card">
                     <div class="command-header">
                         <span class="command-name">harden -t sys</span>
                         <span class="command-badge">System Hardening</span>
                     </div>
                     <div class="command-body">
-                        <div class="command-example">harden -t sys [--dry-run]</div>
+                        <div class="command-example">
+                            harden -t sys [--dry-run]
+                        </div>
                         <div class="command-description">
-                            DSTerminal Hardening applies:
-                            <ul style="margin-top: 10px;">
+                            <strong>Applies:</strong>
+                            <ul>
                                 <li>• Windows: Disables SMB1 protocol</li>
                                 <li>• Windows: Configures firewall rules</li>
                                 <li>• Linux: Enables UFW firewall</li>
@@ -1366,36 +1411,41 @@ encrypt-test</code></pre>
                     </div>
                 </div>
 
+                <h3>10.2 MAC Address Spoofing</h3>
                 <div class="command-card">
                     <div class="command-header">
                         <span class="command-name">macspoof</span>
                         <span class="command-badge">MAC Changer</span>
                     </div>
                     <div class="command-body">
-                        <div class="command-example">macspoof [interface]</div>
+                        <div class="command-example">
+                            macspoof [interface]
+                        </div>
                         <div class="command-description">
-                            DSTerminal MAC Changer:
-                            <ul style="margin-top: 10px;">
+                            <strong>Features:</strong>
+                            <ul>
                                 <li>• Generates random valid MAC addresses</li>
                                 <li>• Auto-detects active network interface</li>
                                 <li>• Supports Linux, Windows, and macOS</li>
                                 <li>• Verifies MAC change success</li>
-                                <li>• Progress animation during spoofing</li>
                             </ul>
                         </div>
                     </div>
                 </div>
 
+                <h3>10.3 Log Management</h3>
                 <div class="command-card">
                     <div class="command-header">
                         <span class="command-name">clearlogs</span>
                         <span class="command-badge">Log Cleaner</span>
                     </div>
                     <div class="command-body">
-                        <div class="command-example">clearlogs</div>
+                        <div class="command-example">
+                            clearlogs
+                        </div>
                         <div class="command-description">
-                            DSTerminal Log Cleaner:
-                            <ul style="margin-top: 10px;">
+                            <strong>Cleans:</strong>
+                            <ul>
                                 <li>• Windows: Application, System, Security event logs</li>
                                 <li>• Linux: /var/log/* files</li>
                                 <li>• Systemd journal (journalctl)</li>
@@ -1407,22 +1457,21 @@ encrypt-test</code></pre>
                 </div>
             </div>
 
-            <!-- SECTION 11: INCIDENT RESPONSE -->
-            <div id="section11" class="content-section">
-                <h2>11. INCIDENT RESPONSE</h2>
-                
+            <!-- ===== INCIDENT RESPONSE SECTION ===== -->
+            <div id="incident-response" class="content-section" style="display: none;">
+                <h2>11. Incident Response</h2>
+
+                <h3>11.1 Financial Attack Simulator</h3>
                 <div class="command-card">
                     <div class="command-header">
                         <span class="command-name">transfertrace / extract -money</span>
                         <span class="command-badge">Financial Analysis</span>
                     </div>
                     <div class="command-body">
-                        <div class="command-example">transfertrace</div>
-                        <div class="command-example">extract -money</div>
                         <div class="command-description">
-                            DSTerminal Financial Simulator:
-                            <ul style="margin-top: 10px;">
-                                <li>• SWIFT network transaction simulation</li>
+                            <strong>Simulates and detects:</strong>
+                            <ul>
+                                <li>• SWIFT network transaction patterns</li>
                                 <li>• Cryptocurrency exchange monitoring</li>
                                 <li>• Payment processor analysis</li>
                                 <li>• Money laundering pattern detection</li>
@@ -1433,16 +1482,19 @@ encrypt-test</code></pre>
                     </div>
                 </div>
 
+                <h3>11.2 Emergency Procedures</h3>
                 <div class="command-card">
                     <div class="command-header">
                         <span class="command-name">shutdown</span>
                         <span class="command-badge">Emergency</span>
                     </div>
                     <div class="command-body">
-                        <div class="command-example">shutdown</div>
+                        <div class="command-example">
+                            shutdown
+                        </div>
                         <div class="command-description">
-                            DSTerminal Emergency Shutdown:
-                            <ul style="margin-top: 10px;">
+                            <strong>Features:</strong>
+                            <ul>
                                 <li>• Requires explicit confirmation ('YES')</li>
                                 <li>• 15-second countdown with visual indicator</li>
                                 <li>• Forces system shutdown</li>
@@ -1457,23 +1509,27 @@ encrypt-test</code></pre>
                 </div>
             </div>
 
-            <!-- SECTION 12: REPORTING -->
-            <div id="section12" class="content-section">
-                <h2>12. REPORTING</h2>
-                
+            <!-- ===== REPORTING SECTION ===== -->
+            <div id="reporting" class="content-section" style="display: none;">
+                <h2>12. Reporting</h2>
+
                 <table class="command-table">
-                    <tr>
-                        <th>Report Type</th>
-                        <th>DSTerminal Command</th>
-                        <th>Output Format</th>
-                    </tr>
-                    <tr><td>System Security Scan</td><td><code>system scan -All --output report.txt</code></td><td>TXT</td></tr>
-                    <tr><td>Network Analysis</td><td><code>net -n mon --export report.pdf</code></td><td>PDF</td></tr>
-                    <tr><td>SSL Certificate Audit</td><td><code>certcheck example.com</code></td><td>PDF/JSON</td></tr>
-                    <tr><td>Encrypted Files Inventory</td><td><code>crypto-list</code></td><td>TXT</td></tr>
-                    <tr><td>Memory Dump</td><td><code>memdump --output memory.dmp</code></td><td>DMP</td></tr>
-                    <tr><td>Forensic Report</td><td><code>network_monitor()</code></td><td>PDF</td></tr>
-                    <tr><td>CVE Scan</td><td><code>exploitcheck</code></td><td>TXT</td></tr>
+                    <thead>
+                        <tr>
+                            <th>Report Type</th>
+                            <th>Command</th>
+                            <th>Output Format</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>System Security Scan</td><td><code>system scan -All --output report.txt</code></td><td>TXT</td></tr>
+                        <tr><td>Network Analysis</td><td><code>net -n mon --export report.pdf</code></td><td>PDF</td></tr>
+                        <tr><td>SSL Certificate Audit</td><td><code>certcheck example.com</code></td><td>PDF/JSON</td></tr>
+                        <tr><td>Encrypted Files Inventory</td><td><code>crypto-list</code></td><td>TXT</td></tr>
+                        <tr><td>Memory Dump</td><td><code>memdump --output memory.dmp</code></td><td>DMP</td></tr>
+                        <tr><td>Forensic Report</td><td><code>network_monitor()</code></td><td>PDF</td></tr>
+                        <tr><td>CVE Scan</td><td><code>exploitcheck</code></td><td>TXT</td></tr>
+                    </tbody>
                 </table>
 
                 <div class="alert alert-info">
@@ -1481,51 +1537,55 @@ encrypt-test</code></pre>
                 </div>
             </div>
 
-            <!-- SECTION 13: TROUBLESHOOTING -->
-            <div id="section13" class="content-section">
-                <h2>13. TROUBLESHOOTING</h2>
-                
+            <!-- ===== TROUBLESHOOTING SECTION ===== -->
+            <div id="troubleshooting" class="content-section" style="display: none;">
+                <h2>13. Troubleshooting</h2>
+
                 <table class="command-table">
-                    <tr>
-                        <th>Issue</th>
-                        <th>Solution</th>
-                    </tr>
-                    <tr><td>Permission denied</td><td>Run DSTerminal with administrator privileges</td></tr>
-                    <tr><td>Module not found</td><td>Run: <code>pip install -r requirements.txt</code></td></tr>
-                    <tr><td>Connection timeout</td><td>Check firewall settings for DSTerminal</td></tr>
-                    <tr><td>Encryption failed</td><td>Run <code>encrypt-setup</code> first</td></tr>
-                    <tr><td>Update failed</td><td>Check internet connection and GitHub access</td></tr>
-                    <tr><td>Workspace error</td><td>Delete ~/.dsterminal_vfs and restart DSTerminal</td></tr>
-                    <tr><td>Nmap not found</td><td>Install nmap and ensure it's in PATH</td></tr>
-                    <tr><td>Metasploit not found</td><td>Install Metasploit or use WSL on Windows</td></tr>
-                    <tr><td>PDF generation failed</td><td>Install reportlab: <code>pip install reportlab</code></td></tr>
+                    <thead>
+                        <tr>
+                            <th>Issue</th>
+                            <th>Solution</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Permission denied</td><td>Run DSTerminal with administrator privileges</td></tr>
+                        <tr><td>Module not found</td><td>Run: <code>pip install -r requirements.txt</code></td></tr>
+                        <tr><td>Connection timeout</td><td>Check firewall settings for DSTerminal</td></tr>
+                        <tr><td>Encryption failed</td><td>Run <code>encrypt-setup</code> first</td></tr>
+                        <tr><td>Update failed</td><td>Check internet connection and GitHub access</td></tr>
+                        <tr><td>Workspace error</td><td>Delete ~/.dsterminal_vfs and restart DSTerminal</td></tr>
+                        <tr><td>Nmap not found</td><td>Install nmap and ensure it's in PATH</td></tr>
+                        <tr><td>Metasploit not found</td><td>Install Metasploit or use WSL on Windows</td></tr>
+                        <tr><td>PDF generation failed</td><td>Install reportlab: <code>pip install reportlab</code></td></tr>
+                    </tbody>
                 </table>
             </div>
 
-            <!-- SECTION 14: APPENDIX -->
-            <div id="section14" class="content-section">
-                <h2>14. APPENDIX</h2>
-                
+            <!-- ===== APPENDIX SECTION ===== -->
+            <div id="appendix" class="content-section" style="display: none;">
+                <h2>14. Appendix</h2>
+
                 <h3>14.1 DSTerminal Directory Structure</h3>
                 <div class="grid-2">
                     <div class="info-panel">
                         <h4>Installation Directory</h4>
-                        <pre><code>├── dsterminal.exe (Main executable)
-├── config/ (Configuration files)
-├── docs/ (Documentation)
-├── tools/ (Helper utilities)
-├── templates/ (Report templates)
-├── logs/ (Application logs)
-└── updates/ (Downloaded updates)</code></pre>
+                        <pre><code>├── dsterminal.exe
+├── config/
+├── docs/
+├── tools/
+├── templates/
+├── logs/
+└── updates/</code></pre>
                     </div>
                     <div class="info-panel">
                         <h4>Workspace Directory</h4>
-                        <pre><code>├── operators/ (Session logs)
-├── scans/ (Scan results)
-├── reports/ (Generated reports)
-├── exploits/ (Safe exploit storage)
-├── sandbox/ (Testing environment)
-└── quarantine/ (Isolated threats)</code></pre>
+                        <pre><code>├── operators/
+├── scans/
+├── reports/
+├── exploits/
+├── sandbox/
+└── quarantine/</code></pre>
                     </div>
                 </div>
 
@@ -1541,27 +1601,146 @@ Configure in CONFIG['UPDATE_URL']</code></pre>
 
                 <h3>14.3 Update Channels</h3>
                 <table class="command-table">
-                    <tr>
-                        <th>Channel</th>
-                        <th>Description</th>
-                    </tr>
-                    <tr><td>Stable Channel</td><td>Production-ready releases</td></tr>
-                    <tr><td>Beta Channel</td><td>Early access to new features</td></tr>
-                    <tr><td>Nightly Channel</td><td>Daily development builds</td></tr>
+                    <thead>
+                        <tr>
+                            <th>Channel</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Stable Channel</td><td>Production-ready releases</td></tr>
+                        <tr><td>Beta Channel</td><td>Early access to new features</td></tr>
+                        <tr><td>Nightly Channel</td><td>Daily development builds</td></tr>
+                    </tbody>
                 </table>
                 <p>Select during installation or in config/update_channel.conf</p>
 
                 <h3>14.4 Support and Community</h3>
                 <table class="command-table">
-                    <tr>
-                        <th>Resource</th>
-                        <th>URL</th>
-                    </tr>
-                    <tr><td>GitHub Repository</td><td>https://github.com/Stark-Expo-Tech-Exchange/DSTerminal_releases_latest</td></tr>
-                    <tr><td>Documentation</td><td>https://starkexpotechexchange-mw.com/docs</td></tr>
-                    <tr><td>Issue Tracker</td><td>https://github.com/Stark-Expo-Tech-Exchange/DSTerminal_releases_latest/issues</td></tr>
-                    <tr><td>Email Support</td><td>support@starkexpotechexchange-mw.com</td></tr>
+                    <thead>
+                        <tr>
+                            <th>Resource</th>
+                            <th>URL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>GitHub Repository</td><td>https://github.com/Stark-Expo-Tech-Exchange/DSTerminal_releases_latest</td></tr>
+                        <tr><td>Documentation</td><td>https://starkexpotechexchange-mw.com/docs</td></tr>
+                        <tr><td>Issue Tracker</td><td>https://github.com/Stark-Expo-Tech-Exchange/DSTerminal_releases_latest/issues</td></tr>
+                        <tr><td>Email Support</td><td>support@starkexpotechexchange-mw.com</td></tr>
+                    </tbody>
                 </table>
+            </div>
+
+            <!-- ===== API REFERENCE SECTION ===== -->
+            <div id="api" class="content-section" style="display: none;">
+                <h2>API Reference</h2>
+                
+                <h3>VirusTotal Integration</h3>
+                <pre><code>vt-scan &lt;file_hash&gt;
+# Returns threat intelligence data from VirusTotal</code></pre>
+
+                <h3>Metasploit Integration</h3>
+                <pre><code>msf-connect &lt;host&gt; &lt;port&gt;
+# Connect to Metasploit RPC server</code></pre>
+
+                <div class="alert alert-info">
+                    <strong>API Keys:</strong> Store in config/api_keys.conf
+                </div>
+            </div>
+
+            <!-- ===== COMMAND LIST SECTION ===== -->
+            <div id="commands" class="content-section" style="display: none;">
+                <h2>Complete Command Reference</h2>
+                
+                <table class="command-table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Command</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>System</td><td><code>sysinfo</code></td><td>System information</td></tr>
+                        <tr><td>System</td><td><code>killproc &lt;PID&gt;</code></td><td>Kill process</td></tr>
+                        <tr><td>System</td><td><code>update</code></td><td>Check updates</td></tr>
+                        <tr><td>Network</td><td><code>net -n mon</code></td><td>Network monitor</td></tr>
+                        <tr><td>Network</td><td><code>portsweep</code></td><td>Port scan</td></tr>
+                        <tr><td>Network</td><td><code>traceroute</code></td><td>Trace route</td></tr>
+                        <tr><td>Crypto</td><td><code>encrypt</code></td><td>Encrypt file</td></tr>
+                        <tr><td>Crypto</td><td><code>decrypt</code></td><td>Decrypt file</td></tr>
+                        <tr><td>Forensics</td><td><code>memdump</code></td><td>Memory dump</td></tr>
+                        <tr><td>Forensics</td><td><code>stegcheck</code></td><td>Steganography check</td></tr>
+                        <tr><td>Forensics</td><td><code>ransomwatch</code></td><td>Ransomware detection</td></tr>
+                        <tr><td>Hardening</td><td><code>harden</code></td><td>System hardening</td></tr>
+                        <tr><td>Hardening</td><td><code>macspoof</code></td><td>MAC changer</td></tr>
+                        <tr><td>Hardening</td><td><code>clearlogs</code></td><td>Clear logs</td></tr>
+                        <tr><td>Incident</td><td><code>transfertrace</code></td><td>Financial tracing</td></tr>
+                        <tr><td>Incident</td><td><code>shutdown</code></td><td>Emergency shutdown</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ===== CONFIGURATION SECTION ===== -->
+            <div id="config" class="content-section" style="display: none;">
+                <h2>Configuration</h2>
+
+                <h3>config/settings.json</h3>
+                <pre><code>{
+    "workspace": "~/DSTerminal_Workspace",
+    "log_level": "INFO",
+    "auto_update": true,
+    "update_channel": "stable",
+    "theme": "cyber",
+    "threat_intel": {
+        "virustotal_enabled": false,
+        "auto_scan": true
+    }
+}</code></pre>
+
+                <h3>Environment Variables</h3>
+                <table class="command-table">
+                    <thead>
+                        <tr>
+                            <th>Variable</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>DSTERMINAL_WORKSPACE</code></td><td>Override workspace location</td></tr>
+                        <tr><td><code>DSTERMINAL_CONFIG</code></td><td>Custom config directory</td></tr>
+                        <tr><td><code>VIRUSTOTAL_API_KEY</code></td><td>VirusTotal API key</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ===== CHANGELOG SECTION ===== -->
+            <div id="changelog" class="content-section" style="display: none;">
+                <h2>Changelog</h2>
+
+                <h3>Version 2.1.0 (March 2024)</h3>
+                <ul style="color: var(--text-secondary);">
+                    <li>• Added real-time network threat scoring</li>
+                    <li>• Enhanced steganography detection algorithms</li>
+                    <li>• Improved memory forensics capabilities</li>
+                    <li>• Added financial attack simulation module</li>
+                    <li>• Integrated VirusTotal API v3</li>
+                    <li>• Performance optimizations for large scans</li>
+                </ul>
+
+                <h3>Version 2.0.0 (January 2024)</h3>
+                <ul style="color: var(--text-secondary);">
+                    <li>• Major UI overhaul with cyber theme</li>
+                    <li>• Added ransomware detection module</li>
+                    <li>• Implemented AES-256 encryption</li>
+                    <li>• PDF report generation</li>
+                    <li>• Cross-platform workspace management</li>
+                </ul>
+
+                <div class="alert alert-success">
+                    <strong>✓ Latest Version:</strong> You are running DSTerminal v2.1.0
+                </div>
             </div>
         </div>
     </div>
@@ -1571,8 +1750,8 @@ Configure in CONFIG['UPDATE_URL']</code></pre>
         <div class="footer-section">
             <h4>DSTerminal v2.1.0</h4>
             <ul>
-                <li><a href="#" onclick="showSection('cover')">Cover Page</a></li>
-                <li><a href="#" onclick="showSection('toc')">Table of Contents</a></li>
+                <li><a href="#" onclick="showSection('changelog')">Release Notes</a></li>
+                <li><a href="#" onclick="showSection('changelog')">Roadmap</a></li>
                 <li><a href="https://github.com/Stark-Expo-Tech-Exchange/DSTerminal_releases_latest">GitHub</a></li>
             </ul>
         </div>
@@ -1580,16 +1759,16 @@ Configure in CONFIG['UPDATE_URL']</code></pre>
         <div class="footer-section">
             <h4>Documentation</h4>
             <ul>
-                <li><a href="#" onclick="showSection('section1')">Introduction</a></li>
-                <li><a href="#" onclick="showSection('section5')">Core Commands</a></li>
-                <li><a href="#" onclick="showSection('section14')">Appendix</a></li>
+                <li><a href="#" onclick="showSection('introduction')">User Guide</a></li>
+                <li><a href="#" onclick="showSection('api')">API Reference</a></li>
+                <li><a href="#" onclick="showSection('commands')">Command List</a></li>
             </ul>
         </div>
 
         <div class="footer-section">
             <h4>Support</h4>
             <ul>
-                <li><a href="#" onclick="showSection('section13')">Troubleshooting</a></li>
+                <li><a href="#" onclick="showSection('troubleshooting')">Troubleshooting</a></li>
                 <li><a href="https://github.com/Stark-Expo-Tech-Exchange/DSTerminal_releases_latest/issues">GitHub Issues</a></li>
                 <li><a href="mailto:support@starkexpotechexchange-mw.com">Email Support</a></li>
             </ul>
@@ -1607,39 +1786,42 @@ Configure in CONFIG['UPDATE_URL']</code></pre>
 
     <!-- ===== SCRIPT FOR INTERACTIVITY ===== -->
     <script>
-        // Set current date
-        document.getElementById('current-date').textContent = new Date().toISOString().split('T')[0] + ' ' + 
-            new Date().toTimeString().split(' ')[0];
-
         // Navigation functionality
         function showSection(sectionId) {
-            // Remove active class from all nav items
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            
-            // Add active class to clicked nav item
-            const activeNav = Array.from(document.querySelectorAll('.nav-item')).find(
-                item => item.getAttribute('onclick')?.includes(sectionId)
-            );
-            if (activeNav) {
-                activeNav.classList.add('active');
-            }
-            
             // Hide all content sections
             document.querySelectorAll('.content-section').forEach(section => {
-                section.classList.remove('active');
+                section.style.display = 'none';
             });
             
             // Show selected section
             const targetSection = document.getElementById(sectionId);
             if (targetSection) {
-                targetSection.classList.add('active');
+                targetSection.style.display = 'block';
             }
+            
+            // Update nav item active state
+            document.querySelectorAll('.nav-item').forEach(nav => {
+                nav.classList.remove('active');
+                if (nav.getAttribute('data-target') === sectionId) {
+                    nav.classList.add('active');
+                }
+            });
         }
+
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                showSection(targetId);
+            });
+        });
 
         // Typing effect on load
         window.addEventListener('load', function() {
+            const h1 = document.querySelector('h1');
+            if (h1) {
+                h1.classList.add('typing-effect');
+            }
+            
             // Add glitch effect periodically
             setInterval(() => {
                 const badge = document.querySelector('.version-badge');
@@ -1650,8 +1832,28 @@ Configure in CONFIG['UPDATE_URL']</code></pre>
             }, 3000);
         });
 
-        // Show cover by default
-        showSection('cover');
+        // Simulate terminal cursor
+        const cursor = document.createElement('span');
+        cursor.className = 'cursor';
+        cursor.innerHTML = '_';
+        cursor.style.animation = 'blink 1s infinite';
+        const h1 = document.querySelector('h1');
+        if (h1) {
+            h1.appendChild(cursor);
+        }
+
+        // Blink animation for cursor
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes blink {
+                0%, 50% { opacity: 1; }
+                51%, 100% { opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Show introduction by default
+        showSection('introduction');
     </script>
 </body>
 </html>

@@ -1,4 +1,5 @@
 import os
+import queue
 from turtle import color
 # import recon
 # ===============================
@@ -34,12 +35,13 @@ import random
 import ssl
 import OpenSSL
 import subprocess
-import argparse
 from cryptography.x509 import load_pem_x509_certificate
 from cryptography.x509.ocsp import OCSPRequestBuilder
 from threading import Thread, Event
-from datetime import datetime, timedelta
+from datetime import datetime
 from cryptography.fernet import Fernet
+import re
+from colorama import Fore, Style, init
 
 from prompt_toolkit import PromptSession, HTML
 from prompt_toolkit import PromptSession
@@ -62,10 +64,11 @@ from rich.text import Text
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
 from rich.live import Live
 from collections import Counter
-
+from rich import box
 from rich.console import Console
 from rich.layout import Layout
 from rich.table import Table as Table
+from rich.table import Table as RichTable
 from random import choice
 from rich.prompt import Prompt
 # from rich.group import Group
@@ -538,7 +541,20 @@ class SecurityTerminal:
     REVERSE = '\033[7m'
     RESET_ALL = '\033[0m'
 
-    def __init__(self):
+    def __init__(self, workspace_root="."):
+        self.workspace_root = workspace_root
+        self.current_dir = workspace_root
+        self.console = Console()
+        self.scan_queue = queue.Queue()
+        self.scan_results = {}
+        self.current_scan = None
+        self.output_lines = []
+        self.scan_progress = 0
+        self.scan_status = "Ready"
+        self.discovered_ports = []
+        self.services_found = []
+        self.nmap_mode = False
+
         # Set up workspace root and current directory
         self.workspace_root = os.path.abspath("DSTerminal_Workspace")
         self.current_dir = self.workspace_root
@@ -1714,59 +1730,489 @@ class SecurityTerminal:
         print(Style.RESET_ALL + " " * 50)
  
 # ---------========-----------------metasplo ends here from above-----------------------------
-    ALLOWED_NMAP_FLAGS = {"-p", "-sT", "-sS", "-sV", "-T4", "-Pn"}
+    # ALLOWED_NMAP_FLAGS = {"-p", "-sT", "-sS", "-sV", "-T4", "-Pn"}
+    # def check_nmap_installed(self):
+    #     return shutil.which("nmap") is not None
+
+
+    # def handle_nmap(self, args):
+    #     if not self.check_nmap_installed():
+    #         print("[!] Nmap is not installed on this system")
+    #         return
+
+    #     if len(args) < 2 or args[0] != "scan":
+    #         print("Usage: nmap scan <target> [flags]")
+    #         return
+
+    #     target = args[1]
+    #     flags = args[2:]
+
+    #     cmd = ["nmap"]
+
+    #     for f in flags:
+    #         if f.startswith("-"):
+    #             if f not in self.ALLOWED_NMAP_FLAGS:
+    #                 print(f"[!] Flag not allowed: {f}")
+    #                 return
+    #         cmd.append(f)
+
+    #     cmd.append(target)
+
+    # # Ensure scans directory exists
+    #     scans_dir = os.path.join(self.workspace_root, "scans")
+    #     os.makedirs(scans_dir, exist_ok=True)
+
+    #     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    #     output_file = os.path.join(
+    #         scans_dir,
+    #         f"nmap_{target}_{timestamp}.txt"
+    #     )
+
+    #     cmd.extend(["-oN", output_file])
+
+    #     print(f"[+] Running nmap scan on {target}...")
+    #     print(f"[+] Output → scans/{os.path.basename(output_file)}")
+
+    #     try:
+    #         subprocess.run(
+    #             cmd,
+    #             shell=self.is_windows(),
+    #             check=True
+    #         )
+    #     except subprocess.CalledProcessError as e:
+    #         print(f"[!] Nmap failed: {e}")
+
+# Initialize colorama
+ 
+    ALLOWED_NMAP_FLAGS = {"-p", "-sT", "-sS", "-sV", "-T4", "-Pn", "-A", "-O", "-sC"}
+
+
     def check_nmap_installed(self):
         return shutil.which("nmap") is not None
 
+    def create_layout(self):
+        """Create the three-column layout"""
+        layout = Layout()
+        layout.split_row(
+            Layout(name="terminal", ratio=1),
+            Layout(name="progress", ratio=1),
+            Layout(name="results", ratio=1)
+        )
+        return layout
+
+    def render_terminal_panel(self):
+        """Render the terminal/command panel"""
+        table = RichTable(show_header=True, header_style="bold green", box=box.HEAVY, padding=(0, 1))
+        table.add_column("Command History", style="cyan")
+        
+        # Show last 10 commands/outputs
+        recent_lines = self.output_lines[-10:] if self.output_lines else ["Ready for commands..."]
+        for line in recent_lines:
+            # Clean the line of any existing Rich markup to prevent conflicts
+            clean_line = line.replace('[', '\\[').replace(']', '\\]')
+            if len(clean_line) > 60:
+                clean_line = clean_line[:60] + "..."
+            table.add_row(clean_line)
+        
+        return Panel(
+            table,
+            title="[bold red]⚡ SOC Terminal ⚡[/bold red]",
+            border_style="bright_red",
+            subtitle="nmap scan <target> [flags]"
+        )
+
+    def render_progress_panel(self):
+        """Render the scan progress panel with enhanced styling"""
+    # Status table with better colors
+        status_table = RichTable(show_header=False, box=box.ROUNDED, border_style="bright_blue", padding=(0, 2))
+        status_table.add_column("Status", style="bold bright_yellow")
+        status_table.add_column("Value", style="bold white")
+    
+    # Scan status with improved color scheme
+        status_color = {
+            "Completed": "bright_green",
+            "Scanning": "bright_yellow",
+            "Starting": "bright_cyan",
+            "Failed": "bright_red",
+            "Ready": "bright_blue"
+        }.get(self.scan_status, "white")
+    
+    # Add blinking effect for active scanning
+        status_display = f"[{status_color}]{self.scan_status}[/{status_color}]"
+        if self.scan_status == "Scanning":
+            status_display = f"[blink][{status_color}]{self.scan_status}[/{status_color}][/blink]"
+    
+        status_table.add_row("Status:", status_display)
+        status_table.add_row("Target:", f"[bold bright_magenta]{self.current_scan if self.current_scan else 'N/A'}[/bold bright_magenta]")
+        status_table.add_row("Progress:", f"[bold bright_green]{self.scan_progress}%[/bold bright_green]")
+    
+        # Progress bar with rotating spinner while waiting
+        progress_width = 40
+    
+    # Create rotating spinner frames
+        spinner_frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+        scan_start_frames = ["🕐", "🕑", "🕒", "🕓", "🕔", "🕕", "🕖", "🕗", "🕘", "🕙", "🕚", "🕛"]
+    
+        if self.scan_status == "Starting" and self.scan_progress == 0:
+        # Show rotating clock while waiting for scan to start
+            frame = scan_start_frames[int(time.time() * 4) % len(scan_start_frames)]
+            progress_display = f"\n\n[bold bright_cyan]   {frame} Initializing scan... {frame}[/bold bright_cyan]\n\n"
+            progress_display += f"[dim]Preparing nmap scan on {self.current_scan}...[/dim]"
+        
+        elif self.scan_status == "Scanning" and self.scan_progress == 0:
+        # Show spinner while scan is starting but no progress yet
+            frame = spinner_frames[int(time.time() * 10) % len(spinner_frames)]
+            progress_display = f"\n\n[bold bright_yellow]   {frame} Waiting for response... {frame}[/bold bright_yellow]\n\n"
+        
+        else:
+        # Normal progress bar when scan is active
+            filled = int((self.scan_progress / 100) * progress_width)
+        
+
+    # Enhanced progress bar with gradient effect
+        progress_width = 40  # Wider progress bar
+        filled = int((self.scan_progress / 100) * progress_width)
+    
+    # Create gradient progress bar
+        progress_bar = ""
+        for i in range(progress_width):
+            if i < filled:
+            # Gradient from cyan to green as progress increases
+                if i < progress_width * 0.3:
+                    progress_bar += "█"  # Cyan at start
+                elif i < progress_width * 0.6:
+                    progress_bar += "█"  # Yellow in middle
+                else:
+                    progress_bar += "█"  # Green at end
+            else:
+                progress_bar += "░"  # Dim remaining
+    
+    # Add percentage with color based on progress
+        if self.scan_progress < 30:
+            percent_color = "bright_cyan"
+        elif self.scan_progress < 70:
+            percent_color = "bright_yellow"
+        else:
+            percent_color = "bright_green"
+    
+        progress_display = f"[bold {percent_color}]{progress_bar}[/bold {percent_color}] [bold white]{self.scan_progress}%[/bold white]"
+    
+    # Add ETA simulation (optional)
+        if self.scan_status == "Scanning" and self.scan_progress > 0:
+            eta_seconds = int((100 - self.scan_progress) * 0.5)  # Rough estimate
+            progress_display += f"\n[dim white]ETA: {eta_seconds}s[/dim white]"
+    
+        progress_panel = Panel(
+            Align.center(progress_display),
+            title="[bold bright_magenta]⚡ PROGRESS[/bold bright_magenta]",
+            border_style="bright_magenta"
+        )
+    
+    # Combine status and progress
+        progress_layout = Layout()
+        progress_layout.split_column(
+            Layout(Panel(status_table, title="[bold bright_blue]📊 SCAN STATUS[/bold bright_blue]", border_style="bright_blue")),
+            Layout(progress_panel)
+        )
+    
+    # Discovered ports section with enhanced styling
+        if self.discovered_ports:
+            ports_text = ""
+            for i, p in enumerate(self.discovered_ports[-8:]):  # Show more ports
+                # Color code based on port state
+                if p['state'] == 'open':
+                    port_color = "bright_green"
+                    icon = "🔓"
+                elif p['state'] == 'filtered':
+                    port_color = "bright_yellow"
+                    icon = "🔒"
+                else:
+                    port_color = "bright_red"
+                    icon = "❌"
+            
+                ports_text += f"{icon} [bold {port_color}]Port {p['port']}/{p.get('protocol', 'tcp')}: {p['service']}[/bold {port_color}]\n"
+        
+            ports_panel = Panel(
+                Align.left(ports_text),
+                title="[bold bright_cyan]🔓 DISCOVERED PORTS[/bold bright_cyan]",
+                border_style="bright_cyan"
+            )
+            progress_layout.split_column(
+                Layout(progress_layout),
+                Layout(ports_panel)
+            )
+    
+        return progress_layout
+
+    def render_results_panel(self):
+        """Render the scan results panel with enhanced styling"""
+        results_table = RichTable(show_header=True, box=box.DOUBLE_EDGE, padding=(0, 2))
+        results_table.add_column("[bold bright_cyan]Port/Protocol[/bold bright_cyan]", style="bright_cyan")
+        results_table.add_column("[bold bright_green]State[/bold bright_green]", style="bright_green")
+        results_table.add_column("[bold bright_yellow]Service[/bold bright_yellow]", style="bright_yellow")
+        results_table.add_column("[bold bright_magenta]Version/Info[/bold bright_magenta]", style="bright_white")
+    
+    # Add discovered services with enhanced formatting
+        if self.services_found:
+            for i, service in enumerate(self.services_found):
+                version = service.get('version', '')
+                if len(version) > 35:
+                    version = version[:35] + "..."
+            
+            # Alternate row colors for better readability
+                if i % 2 == 0:
+                    row_style = "on grey15"
+                else:
+                    row_style = ""
+            
+                results_table.add_row(
+                    f"[bold]{service.get('port', 'N/A')}/{service.get('protocol', 'tcp')}[/bold]",
+                    f"[bold bright_green]{service.get('state', 'N/A')}[/bold bright_green]",
+                    f"[bold bright_yellow]{service.get('service', 'N/A')}[/bold bright_yellow]",
+                    version,
+                    style=row_style
+                )
+        else:
+            # Animated waiting message
+            waiting_frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+            frame = waiting_frames[int(time.time() * 5) % len(waiting_frames)]
+            results_table.add_row(
+                f"[dim]{frame} Waiting for results...[/dim]",
+                "",
+                "",
+                ""
+            )
+    
+    # Add summary if scan completed
+        if self.scan_status == "Completed" and self.discovered_ports:
+            open_ports = len([p for p in self.discovered_ports if p['state'] == 'open'])
+            filtered_ports = len([p for p in self.discovered_ports if p['state'] == 'filtered'])
+            closed_ports = len([p for p in self.discovered_ports if p['state'] == 'closed'])
+        
+        # Create summary with colored counters
+            summary_text = (
+                f"[bold bright_green]Open: {open_ports}[/bold bright_green] | "
+                f"[bold bright_yellow]Filtered: {filtered_ports}[/bold bright_yellow] | "
+                f"[bold bright_red]Closed: {closed_ports}[/bold bright_red]"
+            )
+        
+            summary_panel = Panel(
+                Align.center(summary_text),
+                border_style="bright_green",
+                title="[bold white]SCAN SUMMARY[/bold white]"
+            )
+        
+        # Create a layout with both table and summary
+            results_layout = Layout()
+            results_layout.split_column(
+                Layout(Panel(results_table, title="[bold bright_green]🎯 OPEN PORTS & SERVICES[/bold bright_green]", border_style="bright_green")),
+                Layout(summary_panel)
+            )
+            return results_layout
+    
+        return Panel(
+            results_table,
+            title="[bold bright_green]🎯 OPEN PORTS & SERVICES[/bold bright_green]",
+            border_style="bright_green"
+        )
+
+
+    def parse_nmap_output(self, line):
+        """Parse nmap output in real-time"""
+        # Parse port discovery
+        port_match = re.search(r'(\d+)/(tcp|udp)\s+(\w+)\s+(\w+)\s*(.*)', line)
+        if port_match:
+            port_info = {
+                'port': port_match.group(1),
+                'protocol': port_match.group(2),
+                'state': port_match.group(3),
+                'service': port_match.group(4),
+                'version': port_match.group(5).strip()
+            }
+            
+            if not any(p['port'] == port_info['port'] for p in self.discovered_ports):
+                self.discovered_ports.append(port_info)
+                if port_info['state'] == 'open':
+                    self.services_found.append(port_info)
+                    self.scan_progress = min(self.scan_progress + 5, 90)
+        
+        # Parse progress indicators
+        if "Scanning" in line:
+            self.scan_status = "Scanning"
+        elif "Nmap done" in line:
+            self.scan_status = "Completed"
+            self.scan_progress = 100
+        elif "Initiating" in line:
+            self.scan_progress = 10
+        elif "PORT" in line and "STATE" in line:
+            self.scan_progress = 30
+        elif "Service detection" in line:
+            self.scan_progress = 60
+        elif "TRACEROUTE" in line:
+            self.scan_progress = 85
 
     def handle_nmap(self, args):
+        """Main handler for nmap commands"""
         if not self.check_nmap_installed():
-            print("[!] Nmap is not installed on this system")
+            print(f"{Fore.RED}[!] Nmap is not installed on this system{Style.RESET_ALL}")
             return
 
-        if len(args) < 2 or args[0] != "scan":
-            print("Usage: nmap scan <target> [flags]")
+        if len(args) < 1 or args[0] != "scan":
+            print(f"{Fore.YELLOW}Usage: nmap scan <target> [flags]{Style.RESET_ALL}")
             return
 
         target = args[1]
-        flags = args[2:]
+        flags = args[2:] if len(args) > 2 else []
+        
+        # Start scan in background thread
+        scan_thread = threading.Thread(
+            target=self.run_nmap_scan,
+            args=(target, flags)
+        )
+        scan_thread.daemon = True
+        scan_thread.start()
+        
+        # Start the live display
+        self.start_live_display()
 
+    def run_nmap_scan(self, target, flags):
+        """Run nmap scan with real-time progress updates"""
         cmd = ["nmap"]
-
+    
+    # Validate flags
         for f in flags:
             if f.startswith("-"):
                 if f not in self.ALLOWED_NMAP_FLAGS:
-                    print(f"[!] Flag not allowed: {f}")
+                    self.output_lines.append(f"[!] Flag not allowed: {f}")
                     return
-            cmd.append(f)
-
+                cmd.append(f)
+    
         cmd.append(target)
-
-    # Ensure scans directory exists
+    
+    # Create scans directory
         scans_dir = os.path.join(self.workspace_root, "scans")
         os.makedirs(scans_dir, exist_ok=True)
-
+    
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_file = os.path.join(
-            scans_dir,
-            f"nmap_{target}_{timestamp}.txt"
-        )
-
+        safe_target = target.replace('.', '_').replace('/', '_').replace(':', '_')
+        output_file = os.path.join(scans_dir, f"nmap_{safe_target}_{timestamp}.txt")
+    
         cmd.extend(["-oN", output_file])
-
-        print(f"[+] Running nmap scan on {target}...")
-        print(f"[+] Output → scans/{os.path.basename(output_file)}")
-
+    
+    # Reset scan state
+        self.current_scan = target
+        self.scan_status = "Starting"
+        self.discovered_ports = []
+        self.services_found = []
+        self.scan_progress = 0
+        self.output_lines = []
+    
+        self.output_lines.append(f"[+] Running nmap scan on {target}...")
+        self.output_lines.append(f"[+] Command: {' '.join(cmd)}")
+        self.output_lines.append(f"[+] Output → scans/{os.path.basename(output_file)}")
+    
         try:
-            subprocess.run(
+            process = subprocess.Popen(
                 cmd,
-                shell=self.is_windows(),
-                check=True
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                universal_newlines=True
             )
-        except subprocess.CalledProcessError as e:
-            print(f"[!] Nmap failed: {e}")
+        
+            for line in process.stdout:
+                line = line.strip()
+                if line:
+                    self.output_lines.append(line)
+                    self.parse_nmap_output(line)
+                
+                    if len(self.output_lines) > 100:
+                        self.output_lines = self.output_lines[-100:]
+        
+            process.wait()
+        
+            if process.returncode == 0:
+                self.scan_status = "Completed"
+                self.scan_progress = 100
+                self.output_lines.append("[+] Scan completed successfully!")
+            
+            # Save results to file
+                self.save_scan_results(output_file)
+            else:
+                self.scan_status = "Failed"
+                self.output_lines.append(f"[!] Nmap failed with code {process.returncode}")
+            
+        except Exception as e:
+            self.scan_status = "Failed"
+            self.output_lines.append(f"[!] Scan error: {str(e)}")
+    
+    # Keep nmap_mode active to show results
+    # The user will press Enter to exit via show_final_results()
 
+    def save_scan_results(self, output_file):
+        """Save formatted scan results to file"""
+        try:
+            with open(output_file.replace('.txt', '_formatted.txt'), 'w') as f:
+                f.write("=" * 60 + "\n")
+                f.write(f"NMAP SCAN RESULTS - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write("=" * 60 + "\n\n")
+                f.write(f"Target: {self.current_scan}\n")
+                f.write(f"Status: {self.scan_status}\n")
+                f.write(f"Open Ports: {len([p for p in self.discovered_ports if p['state'] == 'open'])}\n\n")
+            
+                f.write("DISCOVERED PORTS:\n")
+                f.write("-" * 40 + "\n")
+                for port in self.discovered_ports:
+                    if port['state'] == 'open':
+                        f.write(f"{port['port']}/{port['protocol']} - {port['service']} - {port['version']}\n")
+        except:
+            pass
+    def start_live_display(self):
+        """Start the live three-column display with persistent results after completion"""
+        self.nmap_mode = True
+        self.console.clear()
+    
+        try:
+        # Increased refresh rate for smoother progress
+            with Live(console=self.console, refresh_per_second=10, screen=True) as live:
+                while self.nmap_mode or self.scan_status == "Completed":
+                # Create a new layout for each update
+                    layout = Layout()
+                    layout.split_row(
+                        Layout(self.render_terminal_panel()),
+                        Layout(self.render_progress_panel()),
+                        Layout(self.render_results_panel())
+                    )
+                
+                    live.update(layout)
+                    time.sleep(0.05)  # Faster updates (50ms instead of 100ms)
+                
+                # If scan is complete, wait for user input to exit
+                    if self.scan_status == "Completed" and self.nmap_mode:
+                    # Still show the display but allow exit on keypress
+                        pass
+                    
+        except Exception as e:
+            print(f"{Fore.RED}[!] Display error: {str(e)}{Style.RESET_ALL}")
+        finally:
+            # Show final results and prompt to return
+            self.show_final_results()
 
+    def show_final_results(self):
+        """Display final scan results and wait for user to return to terminal"""
+        self.console.clear()
+    
+    # Create final results display
+        final_layout = Layout()
+        final_layout.split_column(
+            Layout(Panel("[bold green]✓ SCAN COMPLETE[/bold green]", border_style="green"), size=3),
+            Layout(self.render_results_panel()),
+            Layout(Panel("[bold yellow]Press Enter to return to terminal[/bold yellow]", border_style="yellow"), size=3)
+        )
+    
+        self.console.print(final_layout)
+        input()  # Wait for user to press Enter
 # =====================end nmap here----
 
     def handle_ls(self):
@@ -3457,6 +3903,7 @@ class SecurityTerminal:
     
         print("\n💡 Store backups in multiple secure locations!")
         print("   Without this key, encrypted files are LOST FOREVER.")
+
 # ---------------------ends here---------------
     def watch_folder(self, path):
         """Monitor a folder for changes"""
@@ -4290,7 +4737,7 @@ class SecurityTerminal:
 
     def _styled_table(self, data):
 
-        table = RichTable(data, colWidths=[180, 320])
+        table = Table(data, colWidths=[150, 350])
 
         style = TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), lightgrey),
@@ -5421,7 +5868,7 @@ class SecurityTerminal:
                 print(f"\n{Fore.CYAN}{self._center_text('═' * 60)}{Style.RESET_ALL}")
                 print(f"{Fore.YELLOW}{self._center_text('DEFENSIVE SECURITY TERMINAL v2.1.0')}{Style.RESET_ALL}")
                 print(f"{Fore.CYAN}{self._center_text('═' * 60)}{Style.RESET_ALL}")
-                print(f"{Fore.GREEN}{self._center_text('⚡ System Ready | Mode: ADMIN ⚡')}{Style.RESET_ALL}")
+                print(f"{Fore.GREEN}{self._center_text('⚡ System Ready | Mode: HARDENING MODE ⚡')}{Style.RESET_ALL}")
                 time.sleep(0.2)
         
         time.sleep(1)
