@@ -90,11 +90,12 @@ from reportlab.platypus import (
     PageBreak
 )
 from reportlab.lib.colors import black, lightgrey, HexColor
-
+from crypto_engine import CryptoEngine
 init(autoreset=True)
 
 engine = EducationTypingEngine(speed=0.03)
 username = "OP-" + uuid.uuid4().hex[:6].upper()
+crypto_engine = CryptoEngine()
 
 
 # =============dsterminal workspace creation from here===============
@@ -107,7 +108,7 @@ def init_workspace():
         for subdir in subdirs:
             os.makedirs(os.path.join(workspace_path, subdir), exist_ok=True)
         # print(f"{Fore.GREEN}[+] Workspace initialized at: {workspace_path}{Style.RESET_ALL}")
-        # return workspace_path
+        # return workspace_pencryptath
     except Exception as e:
         print(f"{Fore.RED}[!] Failed to initialize workspace: {e}{Style.RESET_ALL}")
         sys.exit(1) 
@@ -540,10 +541,10 @@ class SecurityTerminal:
     UNDERLINE = '\033[4m'
     REVERSE = '\033[7m'
     RESET_ALL = '\033[0m'
-
     def __init__(self, workspace_root="."):
-        self.workspace_root = workspace_root
         self.current_dir = workspace_root
+        self.workspace_root = workspace_root
+        self.crypto = CryptoEngine(os.getcwd())
         self.console = Console()
         self.scan_queue = queue.Queue()
         self.scan_results = {}
@@ -574,8 +575,8 @@ class SecurityTerminal:
         self.terminal_width = self._get_terminal_width()
 
         # Initialize encryption
-        self.cipher = None
-        self.init_cipher()
+        # self.cipher = None
+        # self.init_cipher()
  
         # Virtual filesystem directory
         self.vfs_root = os.path.expanduser("~/.dsterminal_vfs")
@@ -801,27 +802,6 @@ class SecurityTerminal:
             return "0.0.0"
 
 # --------------------VERSION OF THE DSTERMINAL END HERE--------------
-    def init_cipher(self):
-        """Initialize encryption cipher with key from config or user"""
-        try:
-            key = CONFIG.get('ENCRYPT_KEY')
-            if not key:
-                # Generate or load key
-                key_file = os.path.expanduser("~/.dsterminal_key")
-                if os.path.exists(key_file):
-                    with open(key_file, 'r') as f:
-                        key = f.read().strip()
-                else:
-                    # Generate new key
-                    key = Fernet.generate_key().decode()
-                    with open(key_file, 'w') as f:
-                        f.write(key)
-                    os.chmod(key_file, 0o600)  # Secure permissions
-            
-            self.cipher = Fernet(key.encode())
-        except Exception as e:
-            print(f"[!] Encryption initialization failed: {e}")
-            self.cipher = None
 
         """Initialize terminal settings"""
         self.log_file = "security_harden.log"
@@ -891,7 +871,7 @@ class SecurityTerminal:
             
         }
     
-        self.cipher = Fernet(CONFIG['ENCRYPT_KEY'].encode())
+        # self.cipher = Fernet(CONFIG['ENCRYPT_KEY'].encode())
         self.scan_complete = Event()
         self.scan_progress = 0
 
@@ -3260,650 +3240,6 @@ class SecurityTerminal:
             else:
                 print(f"  [!] Missing critical file: {file}")
 
-    def show_crypto_status(self):
-        """Show encryption system status"""
-        print("\n🔐 ENCRYPTION SYSTEM STATUS")
-        print("="*40)
-    
-        key_file = os.path.expanduser("~/.dsterminal_key")
-    
-        if os.path.exists(key_file):
-            with open(key_file, 'r') as f:
-                key = f.read().strip()
-                key_id = hashlib.sha256(key.encode()).hexdigest()[:16]
-        
-            print(f"✅ Encryption: ENABLED")
-            print(f"🔑 Key ID: {key_id}")
-            print(f"📁 Key file: {key_file}")
-        
-        # Test cipher
-            try:
-                Fernet(key.encode())
-                print("🔒 Key status: VALID")
-            except:
-                print("🔒 Key status: INVALID")
-        else:
-            print("❌ Encryption: NOT CONFIGURED")
-            print("   Run 'encrypt-setup' to configure")
-    
-        print(f"\n📊 Cipher initialized: {'✅' if self.cipher else '❌'}")
-        print(f"📁 VFS root: {self.vfs_root}")
-
-    def encrypt_file(self, file_path):
-        """Encrypt a file using AES-256 with enhanced features"""
-        # Resolve path
-        resolved_path = self.resolve_path(file_path)
-        if not resolved_path:
-            print(f"[!] File '{file_path}' not found in VFS or current directory")
-            self.show_vfs_files()
-            return
-        
-        if not self.cipher:
-            print("[!] Encryption not initialized. Run 'encrypt-init' first.")
-            return
-        
-        try:
-            print(f"\n{'='*50}")
-            print(f"🔒 ENCRYPTING: {os.path.basename(resolved_path)}")
-            print(f"{'='*50}")
-            
-            # Get file info
-            file_size = os.path.getsize(resolved_path)
-            print(f"📁 File size: {self.human_readable_size(file_size)}")
-            
-            # Confirm encryption
-            confirm = input("\n⚠️  Confirm encryption? (y/N): ").lower()
-            if confirm != 'y':
-                print("[*] Encryption cancelled")
-                return
-            
-            # Read and encrypt
-            with open(resolved_path, 'rb') as f:
-                data = f.read()
-            
-            print("[+] Encrypting data...")
-            encrypted = self.cipher.encrypt(data)
-            
-            # Save encrypted file
-            encrypted_path = resolved_path + '.enc'
-            with open(encrypted_path, 'wb') as f:
-                f.write(encrypted)
-            
-            # Calculate hash
-            file_hash = hashlib.sha256(data).hexdigest()
-            enc_hash = hashlib.sha256(encrypted).hexdigest()
-            
-            # Secure delete original (optional)
-            secure_delete = input("\n🗑️  Securely delete original file? (y/N): ").lower()
-            if secure_delete == 'y':
-                self.secure_delete(resolved_path)
-                print("[+] Original file securely deleted")
-            else:
-                os.remove(resolved_path)
-                print("[+] Original file deleted")
-            
-            print(f"\n{'✓'*50}")
-            print("✅ ENCRYPTION SUCCESSFUL")
-            print(f"{'✓'*50}")
-            print(f"\n📄 Encrypted file: {os.path.basename(encrypted_path)}")
-            print(f"📁 Location: {encrypted_path}")
-            print(f"🔑 Key ID: {hashlib.sha256(CONFIG['ENCRYPT_KEY'].encode()).hexdigest()[:16]}")
-            print(f"📊 Original hash: {file_hash[:32]}...")
-            print(f"📊 Encrypted hash: {enc_hash[:32]}...")
-            print(f"💾 Size increase: {len(encrypted) - file_size} bytes")
-            print(f"\n⚠️  IMPORTANT: Keep your key safe! Without it, files cannot be decrypted.")
-            print("   Store key in secure location.")
-            
-        except Exception as e:
-            print(f"\n{'✗'*50}")
-            print(f"❌ ENCRYPTION FAILED: {e}")
-            print(f"{'✗'*50}")
-    
-    def decrypt_file(self, file_path, key=None):
-        """Decrypt a file with enhanced features"""
-        # Check if file has .enc extension
-        if not file_path.endswith('.enc'):
-            # Try with .enc extension
-            enc_path = self.resolve_path(file_path + '.enc')
-            if enc_path:
-                file_path = file_path + '.enc'
-            else:
-                print("[!] File must have .enc extension or be found with it")
-                return
-        
-        resolved_path = self.resolve_path(file_path)
-        if not resolved_path:
-            print(f"[!] File '{file_path}' not found")
-            return
-        
-        try:
-            print(f"\n{'='*50}")
-            print(f"🔓 DECRYPTING: {os.path.basename(resolved_path)}")
-            print(f"{'='*50}")
-            
-            # Get file info
-            file_size = os.path.getsize(resolved_path)
-            print(f"📁 Encrypted size: {self.human_readable_size(file_size)}")
-            
-            # Check if we have the key
-            if not self.cipher:
-                print("[!] No encryption key available")
-                key_option = input("Enter key manually? (y/N): ").lower()
-                if key_option == 'y':
-                    key = getpass("🔑 Enter decryption key: ")
-                    self.cipher = Fernet(key.encode())
-                else:
-                    print("[*] Decryption cancelled")
-                    return
-            
-            # Confirm decryption
-            confirm = input("\n⚠️  Confirm decryption? (y/N): ").lower()
-            if confirm != 'y':
-                print("[*] Decryption cancelled")
-                return
-            
-            # Read and decrypt
-            with open(resolved_path, 'rb') as f:
-                encrypted = f.read()
-            
-            print("[+] Decrypting data...")
-            decrypted = self.cipher.decrypt(encrypted)
-            
-            # Save decrypted file
-            output_name = os.path.basename(resolved_path).replace('.enc', '')
-            output_path = os.path.join(os.path.dirname(resolved_path), output_name)
-            
-            # Check if file already exists
-            if os.path.exists(output_path):
-                overwrite = input(f"\n⚠️  File '{output_name}' already exists. Overwrite? (y/N): ").lower()
-                if overwrite != 'y':
-                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    output_name = f"{output_name}_{timestamp}"
-                    output_path = os.path.join(os.path.dirname(resolved_path), output_name)
-            
-            with open(output_path, 'wb') as f:
-                f.write(decrypted)
-            
-            # Verify decryption
-            dec_hash = hashlib.sha256(decrypted).hexdigest()
-            
-            print(f"\n{'✓'*50}")
-            print("✅ DECRYPTION SUCCESSFUL")
-            print(f"{'✓'*50}")
-            print(f"\n📄 Decrypted file: {output_name}")
-            print(f"📁 Location: {output_path}")
-            print(f"📊 File hash: {dec_hash}")
-            print(f"💾 Size: {len(decrypted)} bytes")
-            
-            # Option to delete encrypted file
-            delete_enc = input("\n🗑️  Delete encrypted file? (y/N): ").lower()
-            if delete_enc == 'y':
-                os.remove(resolved_path)
-                print("[+] Encrypted file deleted")
-            
-        except Exception as e:
-            print(f"\n{'✗'*50}")
-            print(f"❌ DECRYPTION FAILED: {e}")
-            print(f"{'✗'*50}")
-            print("\nPossible issues:")
-            print("1. Wrong encryption key")
-            print("2. File corrupted")
-            print("3. File not encrypted with this system")
-    
-    def human_readable_size(self, size):
-        """Convert bytes to human readable format"""
-        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-            if size < 1024.0:
-                return f"{size:.2f} {unit}"
-            size /= 1024.0
-        return f"{size:.2f} PB"
-    
-    def secure_delete(self, file_path, passes=3):
-        """Securely delete a file by overwriting it"""
-        try:
-            file_size = os.path.getsize(file_path)
-            with open(file_path, 'wb') as f:
-                for i in range(passes):
-                    f.write(os.urandom(file_size))
-                    f.flush()
-                    os.fsync(f.fileno())
-            os.remove(file_path)
-            return True
-        except:
-            return False
-    
-    def show_vfs_files(self):
-        """Show files in virtual filesystem"""
-        print("\n📁 Virtual Filesystem Contents:")
-        print("-" * 40)
-        
-        if not os.path.exists(self.vfs_root):
-            print("VFS not initialized")
-            return
-        
-        for item in os.listdir(self.vfs_root):
-            item_path = os.path.join(self.vfs_root, item)
-            if os.path.isfile(item_path):
-                size = os.path.getsize(item_path)
-                print(f"📄 {item:30} {self.human_readable_size(size):>10}")
-            else:
-                print(f"📁 {item}/")
-    
-    def handle_encrypt_test(self, args=None):
-        """Test encryption system with a sample file"""
-        if args is None:
-            args = []
-        print("\n🧪 ENCRYPTION SYSTEM TEST")
-        print("="*60)
-    
-        try:
-        # Create test file
-            test_file = os.path.join(self.vfs_root, "test_encrypt.txt")
-            with open(test_file, 'w') as f:
-                f.write("This is a test file for encryption validation.\n")
-                f.write(f"Timestamp: {datetime.now()}\n")
-                f.write(f"Random data: {os.urandom(16).hex()}\n")
-        
-            print(f"[+] Created test file: {test_file}")
-            print(f"[+] File size: {os.path.getsize(test_file)} bytes")
-        
-        # Test encryption
-            print("\n[1] Testing encryption...")
-            self.encrypt_file("test_encrypt.txt")
-        
-        # Check encrypted file exists
-            enc_file = test_file + '.enc'
-            if os.path.exists(enc_file):
-                print(f"[+] Encrypted file created: {enc_file}")
-                print(f"[+] Encrypted size: {os.path.getsize(enc_file)} bytes")
-            
-            # Test decryption
-                print("\n[2] Testing decryption...")
-            # Temporarily rename to avoid conflict
-                temp_enc = enc_file + ".test"
-                shutil.copy(enc_file, temp_enc)
-            
-            # Decrypt
-                self.decrypt_file("test_encrypt.txt.enc.test")
-            
-            # Cleanup
-                for f in [test_file, enc_file, temp_enc]:
-                    if os.path.exists(f):
-                        os.remove(f)
-            
-                print("\n✅ ENCRYPTION TEST PASSED")
-                print("   All encryption/decryption operations completed successfully")
-            else:
-                print("[!] Encryption test failed - no encrypted file created")
-            
-        except Exception as e:
-            print(f"\n❌ ENCRYPTION TEST FAILED: {e}")
-            print("   Check your encryption system setup")
-    
-    def handle_decrypt(self, args):
-        """Handle decrypt command"""
-        if not args:
-            file_path = input("File to decrypt: ")
-            key = None
-        elif len(args) == 1:
-            file_path = args[0]
-            key = None
-        else:
-            file_path = args[0]
-            key = args[1]
-        
-        self.decrypt_file(file_path, key)
-    
-    def handle_encryption_setup(self, args):
-        """Setup encryption system"""
-        print("\n🔐 ENCRYPTION SYSTEM SETUP")
-        print("="*40)
-        
-        key_file = os.path.expanduser("~/.dsterminal_key")
-        
-        if os.path.exists(key_file):
-            print("[+] Encryption key already exists")
-            print(f"[+] Key file: {key_file}")
-            
-            with open(key_file, 'r') as f:
-                key = f.read().strip()
-                key_id = hashlib.sha256(key.encode()).hexdigest()[:16]
-                print(f"[+] Key ID: {key_id}")
-            
-            print("\nOptions:")
-            print("1. Use existing key")
-            print("2. Generate new key (WARNING: Old encrypted files won't be decryptable)")
-            print("3. Import key from file")
-            
-            choice = input("\nSelect option (1-3): ")
-            
-            if choice == '2':
-                # Generate new key
-                new_key = Fernet.generate_key().decode()
-                backup = input("\nBackup old key? (y/N): ").lower()
-                if backup == 'y':
-                    backup_path = key_file + ".backup"
-                    with open(backup_path, 'w') as f:
-                        f.write(key)
-                    print(f"[+] Old key backed up to {backup_path}")
-                
-                with open(key_file, 'w') as f:
-                    f.write(new_key)
-                print("[+] New key generated")
-                self.init_cipher()
-                
-            elif choice == '3':
-                import_path = input("Path to key file: ")
-                if os.path.exists(import_path):
-                    with open(import_path, 'r') as f:
-                        imported_key = f.read().strip()
-                    
-                    # Test key
-                    try:
-                        Fernet(imported_key.encode())
-                        with open(key_file, 'w') as f:
-                            f.write(imported_key)
-                        print("[+] Key imported successfully")
-                        self.init_cipher()
-                    except:
-                        print("[!] Invalid key format")
-                else:
-                    print("[!] Key file not found")
-        else:
-            # Generate new key
-            print("[+] Generating new encryption key...")
-            key = Fernet.generate_key().decode()
-            
-            with open(key_file, 'w') as f:
-                f.write(key)
-            
-            os.chmod(key_file, 0o600)
-            print(f"[+] Key saved to {key_file}")
-            print(f"[+] Key ID: {hashlib.sha256(key.encode()).hexdigest()[:16]}")
-            print("\n⚠️  IMPORTANT: Backup this key file! Without it, encrypted files cannot be recovered.")
-            
-            self.init_cipher()
-        
-        print("\n✅ Encryption system ready")
-
-# encryptions ends below-------------------
-
-    def handle_encrypted_files(self, args=None):
-        """Show all encrypted files in the system"""
-        if args is None:
-            args= []
-        print("\n🔐 ENCRYPTED FILES INVENTORY")
-        print("="*60)
-    
-        encrypted_files = []
-    
-    # Search for .enc files in current directory and subdirectories
-        for root, dirs, files in os.walk(self.current_dir):
-            for file in files:
-                if file.endswith('.enc'):
-                    full_path = os.path.join(root, file)
-                    size = os.path.getsize(full_path)
-                    rel_path = os.path.relpath(full_path, self.current_dir)
-                
-                    encrypted_files.append({
-                        'name': file,
-                        'path': rel_path,
-                        'full_path': full_path,
-                        'size': size,
-                        'modified': os.path.getmtime(full_path)
-                    })
-    
-        if not encrypted_files:
-            print("No encrypted files found.")
-            print("\n💡 To encrypt a file: encrypt <filename>")
-            return
-        
-        print(f"Found {len(encrypted_files)} encrypted file(s):\n")
-    
-        for i, ef in enumerate(encrypted_files, 1):
-            mod_time = datetime.fromtimestamp(ef['modified']).strftime('%Y-%m-%d %H:%M')
-            original_name = ef['name'].replace('.enc', '')
-        
-            print(f"{i:2}. 🔒 {ef['name']:25}")
-            print(f"    📁 {ef['path']}")
-            print(f"    📊 {self.human_readable_size(ef['size']):>10}  📅 {mod_time}")
-            print(f"    🔓 Original: {original_name}")
-            print()
-    
-        print("="*60)
-        print("Commands:")
-        print("  decrypt <filename.enc>    - Decrypt a file")
-        print("  crypto-info <filename.enc> - Show encryption info")
-        print("  crypto-verify             - Verify encryption system")
-
-    def handle_crypto_info(self, args=None):
-        """Show information about an encrypted file"""
-        if args is None:
-            args = []
-        if not args:
-            print("[!] Usage: crypto-info <filename.enc>")
-            return
-    
-        filename = args[0]
-        if not filename.endswith('.enc'):
-            filename += '.enc'
-    
-        filepath = self.resolve_file_path(filename)
-        if not filepath or not os.path.exists(filepath):
-            print(f"[!] File '{filename}' not found")
-            return
-    
-        try:
-            print(f"\n🔐 ENCRYPTION INFORMATION")
-            print("="*60)
-        
-        # File stats
-            size = os.path.getsize(filepath)
-            modified = datetime.fromtimestamp(os.path.getmtime(filepath))
-            created = datetime.fromtimestamp(os.path.getctime(filepath))
-        
-            print(f"📄 File: {os.path.basename(filepath)}")
-            print(f"📁 Path: {filepath}")
-            print(f"📊 Size: {self.human_readable_size(size)}")
-            print(f"📅 Created: {created.strftime('%Y-%m-%d %H:%M:%S')}")
-            print(f"📅 Modified: {modified.strftime('%Y-%m-%d %H:%M:%S')}")
-        
-        # Read encrypted data
-            with open(filepath, 'rb') as f:
-                encrypted_data = f.read()
-        
-        # Calculate hash
-            file_hash = hashlib.sha256(encrypted_data).hexdigest()
-        
-            print(f"🔢 SHA-256: {file_hash}")
-            print(f"🔢 MD5: {hashlib.md5(encrypted_data).hexdigest()}")
-        
-        # Try to detect encryption type
-            print(f"\n🔍 Encryption Analysis:")
-        
-        # Check if it's Fernet encrypted
-            try:
-            # Fernet tokens are URL-safe base64 encoded
-                import base64
-                decoded = base64.urlsafe_b64decode(encrypted_data)
-                if len(decoded) > 0:
-                    print("  ✅ Appears to be Fernet encrypted (AES-256)")
-                
-                # Try to get timestamp from Fernet token
-                    if len(encrypted_data) > 50:
-                        try:
-                            from cryptography.fernet import Fernet
-                        # Just checking format, not actually decrypting
-                            Fernet(b'0'*44).decrypt(encrypted_data, ttl=0)
-                            print("  ✅ Valid Fernet token format")
-                        except:
-                            print("  ⚠️  Fernet format but invalid token")
-                else:
-                    print("  ⚠️  Unknown encryption format")
-            except:
-                print("  ⚠️  Unknown encryption format")
-        
-        # Show first few bytes in hex
-            print(f"\n📊 First 32 bytes (hex):")
-            hex_dump = ' '.join(f'{b:02x}' for b in encrypted_data[:32])
-            print(f"  {hex_dump}")
-        
-            if len(encrypted_data) > 32:
-                print(f"  ... (truncated)")
-        
-        # Check if original file exists
-            original_path = filepath.replace('.enc', '')
-            if os.path.exists(original_path):
-                print(f"\n⚠️  WARNING: Original file still exists!")
-                print(f"   {original_path}")
-                print("   Consider deleting it for security.")
-        
-            print(f"\n💡 To decrypt: decrypt {os.path.basename(filepath)}")
-        
-        except Exception as e:
-            print(f"[!] Error analyzing file: {e}")
-
-    def handle_crypto_verify(self, args=None):
-        """Verify encryption system is working"""
-        if args is None:
-            args = []
-        print("\n🔐 ENCRYPTION SYSTEM VERIFICATION")
-        print("="*60)
-    
-    # Check key file
-        key_file = os.path.expanduser("~/.dsterminal_key")
-        if os.path.exists(key_file):
-            print(f"✅ Key file found: {key_file}")
-        
-            with open(key_file, 'r') as f:
-                key = f.read().strip()
-                key_hash = hashlib.sha256(key.encode()).hexdigest()[:16]
-        
-            print(f"✅ Key ID: {key_hash}")
-        
-        # Check key format
-            try:
-                from cryptography.fernet import Fernet
-                Fernet(key.encode())
-                print("✅ Key format: VALID (44-character base64)")
-            except:
-                print("❌ Key format: INVALID")
-        else:
-            print("❌ Key file NOT found")
-            print("   Run 'encrypt-setup' to create one")
-            return
-    
-    # Check cipher initialization
-        if self.cipher:
-            print("✅ Cipher initialized: YES")
-        else:
-         print("❌ Cipher initialized: NO")
-    
-    # Test encryption/decryption
-        print("\n🧪 Running self-test...")
-    
-        try:
-            test_data = b"DSTerminal encryption test " + os.urandom(16)
-        
-        # Encrypt
-            encrypted = self.cipher.encrypt(test_data)
-        
-        # Decrypt
-            decrypted = self.cipher.decrypt(encrypted)
-        
-            if test_data == decrypted:
-                print("✅ Self-test: PASSED")
-                print(f"   Test data: {len(test_data)} bytes")
-                print(f"   Encrypted: {len(encrypted)} bytes")
-                print(f"   Overhead: {len(encrypted) - len(test_data)} bytes")
-            else:
-                print("❌ Self-test: FAILED - Decrypted data doesn't match")
-            
-        except Exception as e:
-            print(f"❌ Self-test: FAILED - {e}")
-    
-    # Check for encrypted files
-        enc_count = 0
-        for root, dirs, files in os.walk(self.current_dir):
-            for file in files:
-                if file.endswith('.enc'):
-                    enc_count += 1
-    
-        print(f"\n📊 Statistics:")
-        print(f"Encrypted files in current dir: {enc_count}")
-    
-        print("\n✅ Encryption system is READY")
-
-    def handle_crypto_backup(self, args=None):
-        """Backup encryption key"""
-        if args is None:
-            args = []
-        print("\n💾 ENCRYPTION KEY BACKUP")
-        print("="*60)
-    
-        key_file = os.path.expanduser("~/.dsterminal_key")
-    
-        if not os.path.exists(key_file):
-            print("[!] No encryption key found")
-            print("[*] Run 'encrypt-setup' first")
-            return
-    
-    # Read key
-        with open(key_file, 'r') as f:
-            key = f.read().strip()
-    
-        key_hash = hashlib.sha256(key.encode()).hexdigest()[:16]
-    
-        print(f"🔑 Key ID: {key_hash}")
-        print(f"📁 Current key file: {key_file}")
-    
-        print("\n⚠️  WARNING: This key can decrypt ALL files encrypted with it!")
-        print("   Store backups in secure locations (encrypted USB, password manager).")
-    
-        backup_option = input("\nBackup to: (1) File, (2) Print to screen, (3) QR code: ").strip()
-    
-        if backup_option == '1':
-            backup_path = input("Backup file path [~/dsterminal_key.backup]: ").strip()
-            if not backup_path:
-                backup_path = os.path.expanduser("~/dsterminal_key.backup")
-        
-            with open(backup_path, 'w') as f:
-                f.write(key)
-        
-        # Set secure permissions
-            os.chmod(backup_path, 0o600)
-        
-            print(f"✅ Key backed up to: {backup_path}")
-            print(f"📊 File size: {os.path.getsize(backup_path)} bytes")
-        
-        elif backup_option == '2':
-            print("\n🔑 ENCRYPTION KEY (Keep this safe!):")
-            print("="*40)
-            print(key)
-            print("="*40)
-            print(f"\nKey ID: {key_hash}")
-        
-        elif backup_option == '3':
-            try:
-                import qrcode
-                qr = qrcode.QRCode(version=1, box_size=10, border=5)
-                qr.add_data(f"DSTerminal Key:{key}")
-                qr.make(fit=True)
-            
-                img = qr.make_image(fill_color="black", back_color="white")
-            
-                qr_path = os.path.expanduser("~/dsterminal_key_qr.png")
-                img.save(qr_path)
-            
-                print(f"✅ QR code saved to: {qr_path}")
-                print("📱 Scan with a QR code reader to view key")
-            
-            except ImportError:
-                print("[!] Install qrcode module: pip install qrcode[pil]")
-    
-        print("\n💡 Store backups in multiple secure locations!")
-        print("   Without this key, encrypted files are LOST FOREVER.")
-
 # ---------------------ends here---------------
     def watch_folder(self, path):
         """Monitor a folder for changes"""
@@ -6156,14 +5492,21 @@ class SecurityTerminal:
 
             # Fix 2: Add the missing command handlers
         elif cmd == "crypto-list":
-            self.handle_encrypted_files(args)
+            self.crypto.crypto_list()
+            return
+        
         elif cmd == "crypto-info":
-            self.handle_crypto_info(args)
+            self.crypto.crypto_info()
+            return
+        
         elif cmd == "crypto-verify":
-            self.handle_crypto_verify(args)
+            self.crypto.crypto_verify()
+            return
+        
         elif cmd == "crypto-backup":
-            self.handle_crypto_backup(args)
-
+            self.crypto.crypto_backup()
+            return
+        
         elif cmd == "recon":
             if len(args) == 0:
                 print("Usage: recon <target> OR recon -full <target>")
@@ -6181,8 +5524,9 @@ class SecurityTerminal:
                 subprocess.run([sys.executable, "recon.py", target])
 
         elif cmd == "encrypt-test":
-            self.handle_encrypt_test(args)
-
+            self.crypto.encrypt_test()
+            return
+        
         elif parts[0] == "pwd":
             self.pwd()
             return
@@ -6263,18 +5607,6 @@ class SecurityTerminal:
             return
 
         # ===================================
-
-        elif cmd == "crypto-list" or cmd == "encrypted-files":
-            self.handle_encrypted_files(args)
-        elif cmd == "crypto-info":
-            self.handle_crypto_info(args)
-        elif cmd == "crypto-verify":
-            self.handle_crypto_verify(args)
-        elif cmd == "crypto-backup":
-                self.handle_crypto_backup(args)
-        elif cmd == "encrypt-test":
-            self.handle_encrypt_test(args)
-
     #  for clear command to clean terminal
     # Add to  command handler:
         elif cmd == "transfertrace":
@@ -6336,30 +5668,32 @@ class SecurityTerminal:
         elif original_cmd.lower() == "check integrity": 
             self.check_integrity()
             self.show_tip(cmd)
-        elif cmd.startswith("encrypt"): 
-            self.encrypt_file(cmd.split()[1] if len(cmd.split()) > 1 else input("File to encrypt: "))
-            self.show_tip(cmd)
-        elif cmd.startswith("decrypt"): 
-            args = cmd.split()
-            if len(args) > 2: 
-                self.decrypt_file(args[1], args[2])
-                self.show_tip(cmd)
-            else: 
-                print("Usage: decrypt FILE.enc KEY")
-                
 
     # =====================================
 
         elif cmd == "encrypt":
-            self.handle_encrypt(args)
+            if args:
+                self.crypto.encrypt_file()
+            else:
+                file = input("File to encrypt: ")
+                self.crypto.encrypt_file(file)
+                return
+            
         elif cmd == "decrypt":
-            self.handle_decrypt(args)
-
+            if args:
+                self.crypto.decrypt_file()
+            else:
+                file = input("File to decrypt: ")
+                self.crypto.decrypt_file(file)
+                return
+            
         elif cmd in ["encrypt-setup", "crypto-init"]:
-            self.handle_encryption_setup(args)
-
+            self.crypto.encrypt_setup()
+            return
+        
         elif cmd == "crypto-status":
-            self.show_crypto_status()
+            self.crypto.crypto_status()
+            return
 
         elif cmd.startswith("watchfolder"): 
             self.watch_folder(cmd.split()[1] if len(cmd.split()) > 1 else ".")
