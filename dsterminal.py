@@ -215,7 +215,7 @@ CONFIG = {
     'UPDATE_URL': 'https://github.com/Stark-Expo-Tech-Exchange/DSTerminal_releases_latest.git',
     'LOG_FILE': 'secure_audit.log',
     'ENCRYPT_KEY': Fernet.generate_key().decode(),
-    'CURRENT_VERSION': '2.0.113 
+    'CURRENT_VERSION': '2.0.113'
 }
 # Add this near CONFIG or __init__
 EDUCATION_TIPS = {

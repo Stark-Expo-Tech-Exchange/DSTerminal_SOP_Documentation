@@ -19,20 +19,19 @@ import shutil
 import platform
 import threading
 import sqlite3
-import glob  # Added missing import
+import glob
 from datetime import datetime, timedelta
 from pathlib import Path
-import psutil  # You'll need to install: pip install psutil
+import psutil
 
 # Platform-specific imports
 if platform.system().lower() == 'windows':
     try:
-        import winreg  # For Windows registry (Windows only)
+        import winreg
     except ImportError:
         winreg = None
         print("Warning: winreg module not available")
 else:
-    # Create a dummy module for non-Windows platforms
     class DummyWinreg:
         def __getattr__(self, name):
             return None
@@ -42,7 +41,6 @@ try:
     from colorama import init, Fore, Back, Style
     init(autoreset=True)
 except ImportError:
-    # Fallback if colorama not installed
     class Fore:
         RED = '\033[91m'; GREEN = '\033[92m'; YELLOW = '\033[93m'
         BLUE = '\033[94m'; MAGENTA = '\033[95m'; CYAN = '\033[96m'
@@ -56,14 +54,13 @@ except ImportError:
         BRIGHT = '\033[1m'; DIM = '\033[2m'; NORMAL = '\033[22m'
         RESET_ALL = '\033[0m'
 
-# Add watchdog for real-time monitoring==============
+# Add watchdog for real-time monitoring
 try:
     from watchdog.observers import Observer
     from watchdog.events import FileSystemEventHandler
     WATCHDOG_AVAILABLE = True
 except ImportError:
     WATCHDOG_AVAILABLE = False
-    # Create dummy classes so the code doesn't break
     class FileSystemEventHandler:
         def on_modified(self, event): pass
         def on_created(self, event): pass
@@ -80,15 +77,17 @@ except ImportError:
     print(f"{Fore.YELLOW}  Install with: pip install watchdog{Style.RESET_ALL}")
 
 
-# ======end watchdog here from above===========
-
-
 class SystemIntegrityMonitor:
     def __init__(self):
         self.db_file = "data/system_integrity.db"
         self.report_dir = "data/integrity_reports"
         self.baseline_dir = "data/baselines"
         self.terminal_width = shutil.get_terminal_size().columns
+        
+        # Default scan limits
+        self.max_files_per_scan = 2000
+        self.max_depth = 2
+        self.scan_timeout = 30
         
         # Create necessary directories
         for dir_path in [self.report_dir, self.baseline_dir]:
@@ -97,9 +96,55 @@ class SystemIntegrityMonitor:
         # System paths based on OS
         self.system_paths = self._get_system_paths()
         
-    # ==============================
-    # SYSTEM PATH DETECTION
-    # ==============================
+        # Get user preferences
+        self._get_user_scan_preferences()
+    
+    def _get_user_scan_preferences(self):
+        """Ask user for scan preferences"""
+        print(f"\n{Fore.CYAN}{'=' * self.terminal_width}{Style.RESET_ALL}")
+        print(f"{Fore.MAGENTA}{Style.BRIGHT}{'INTEGRITY MONITOR SCAN PREFERENCES'.center(self.terminal_width)}{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}{'=' * self.terminal_width}{Style.RESET_ALL}")
+        print(f"\n{Fore.YELLOW}Configure scan limits to control scan duration and resource usage:{Style.RESET_ALL}\n")
+        
+        try:
+            max_files_input = input(f"{Fore.CYAN}Maximum files to scan (default {self.max_files_per_scan}, 0 for unlimited): {Style.RESET_ALL}").strip()
+            if max_files_input and max_files_input != '0':
+                self.max_files_per_scan = int(max_files_input)
+            elif max_files_input == '0':
+                self.max_files_per_scan = 0
+                print(f"{Fore.YELLOW}⚠ Unlimited file scanning may take a long time!{Style.RESET_ALL}")
+            
+            depth_input = input(f"{Fore.CYAN}Directory scan depth (default {self.max_depth}, 1-5): {Style.RESET_ALL}").strip()
+            if depth_input:
+                depth = int(depth_input)
+                self.max_depth = min(max(depth, 1), 5)
+                print(f"{Fore.GREEN}✓ Directory depth set to {self.max_depth}{Style.RESET_ALL}")
+            
+            timeout_input = input(f"{Fore.CYAN}Timeout per category in seconds (default {self.scan_timeout}): {Style.RESET_ALL}").strip()
+            if timeout_input:
+                self.scan_timeout = int(timeout_input)
+                print(f"{Fore.GREEN}✓ Timeout set to {self.scan_timeout} seconds per category{Style.RESET_ALL}")
+            
+            print(f"\n{Fore.GREEN}Scan Preferences:{Style.RESET_ALL}")
+            print(f"  • Max files: {self.max_files_per_scan if self.max_files_per_scan > 0 else 'Unlimited'}")
+            print(f"  • Directory depth: {self.max_depth}")
+            print(f"  • Timeout per category: {self.scan_timeout} seconds")
+            
+            confirm = input(f"\n{Fore.CYAN}Proceed with these settings? (Y/n): {Style.RESET_ALL}").strip().lower()
+            if confirm == 'n':
+                print(f"{Fore.YELLOW}Scan cancelled. Using defaults.{Style.RESET_ALL}")
+                self.max_files_per_scan = 2000
+                self.max_depth = 2
+                self.scan_timeout = 30
+                
+        except ValueError as e:
+            print(f"{Fore.RED}Invalid input. Using defaults.{Style.RESET_ALL}")
+            self.max_files_per_scan = 2000
+            self.max_depth = 2
+            self.scan_timeout = 30
+        
+        print(f"\n{Fore.GREEN}✓ Preferences configured. Starting scan...{Style.RESET_ALL}\n")
+    
     def _get_system_paths(self):
         """Get critical system paths based on OS"""
         system = platform.system().lower()
@@ -157,7 +202,7 @@ class SystemIntegrityMonitor:
                     '/etc/fstab',
                 ]
             })
-        elif system == 'darwin':  # macOS
+        elif system == 'darwin':
             paths.update({
                 'configs': [
                     '/etc',
@@ -180,7 +225,6 @@ class SystemIntegrityMonitor:
                 ]
             })
         
-        # Common user directories
         paths['user_files'].extend([
             os.path.expanduser('~/Documents'),
             os.path.expanduser('~/Downloads'),
@@ -189,11 +233,8 @@ class SystemIntegrityMonitor:
         
         return paths
     
-    # ==============================
-    # FILE/DIRECTORY SCANNING
-    # ==============================
     def scan_system(self, scan_type='all'):
-        """Scan system for files, configs, logs, and databases"""
+        """Scan system with user-defined limits"""
         results = {
             'timestamp': datetime.now().isoformat(),
             'system_info': {
@@ -208,316 +249,305 @@ class SystemIntegrityMonitor:
             'databases': [],
             'critical_files': []
         }
-    
+        
         print(f"{Fore.CYAN}{'=' * self.terminal_width}{Style.RESET_ALL}")
         print(f"{Fore.MAGENTA}{Style.BRIGHT}{'SYSTEM SCAN INITIALIZED'.center(self.terminal_width)}{Style.RESET_ALL}")
         print(f"{Fore.CYAN}{'=' * self.terminal_width}{Style.RESET_ALL}\n")
-    
-    # Scan different categories
+        
         if scan_type in ['all', 'configs']:
             self._scan_configs(results)
-    
         if scan_type in ['all', 'logs']:
             self._scan_logs(results)
-    
         if scan_type in ['all', 'databases']:
             self._scan_databases(results)
-    
         if scan_type in ['all', 'system']:
             self._scan_system_files(results)
-    
         if scan_type in ['all', 'user']:
             self._scan_user_files(results)
-    
-        return results
-
-    def _scan_configs(self, results):
-        """Scan configuration files with continuous spinning animation"""
-        print(f"{Fore.YELLOW}Scanning configuration files...{Style.RESET_ALL}")
-    
-        import threading
-        import itertools
-        import shutil
-        import time
-    
-        stop_spinner = threading.Event()
-    
-        def spin_animation():
-            """Spinning wheel animation that runs until stopped"""
-            spinners = [
-                ['⣾', '⣽', '⣻', '⢿', '⡿', '⣟', '⣯', '⣷'],  # Braille spinners
-                ['▉', '▊', '▋', '▌', '▍', '▎', '▏', '▎', '▍', '▌', '▋', '▊', '▉'],  # Block spinners
-                ['◢', '◣', '◤', '◥']  # Triangle spinners
-            ]
-            colors = [Fore.CYAN, Fore.GREEN, Fore.MAGENTA]
         
+        return results
+    
+    def _scan_with_timeout(self, scan_func, *args, **kwargs):
+        """Run a scan function with timeout"""
+        result = []
+        error = None
+        
+        def target():
+            nonlocal result, error
+            try:
+                result = scan_func(*args, **kwargs)
+            except Exception as e:
+                error = e
+        
+        thread = threading.Thread(target=target)
+        thread.daemon = True
+        thread.start()
+        thread.join(timeout=self.scan_timeout)
+        
+        if thread.is_alive():
+            print(f"\n{Fore.YELLOW}⚠ Scan timed out after {self.scan_timeout} seconds{Style.RESET_ALL}")
+            return []
+        
+        if error:
+            print(f"\n{Fore.RED}✗ Scan error: {error}{Style.RESET_ALL}")
+            return []
+        
+        return result
+    
+    def _scan_configs(self, results):
+        """Scan configuration files with timeout"""
+        print(f"{Fore.YELLOW}Scanning configuration files...{Style.RESET_ALL}")
+        
+        stop_spinner = threading.Event()
+        
+        def spin_animation():
+            spinners = ['⣾', '⣽', '⣻', '⢿', '⡿', '⣟', '⣯', '⣷']
             frame = 0
-            while not stop_spinner.is_set():
-                left = spinners[0][frame % len(spinners[0])]
-                center = spinners[1][frame % len(spinners[1])]
-                right = spinners[2][frame % len(spinners[2])]
+            start_time = time.time()
             
-                colored_wheels = [
-                    f"{colors[0]}{left}{Style.RESET_ALL}",
-                    f"{colors[1]}{center}{Style.RESET_ALL}",
-                    f"{colors[2]}{right}{Style.RESET_ALL}"
-                ]
-            
-                terminal_width = shutil.get_terminal_size().columns
-                wheels_text = f"{colored_wheels[0]}  {colored_wheels[1]}  {colored_wheels[2]}  {Fore.WHITE}Scanning configuration files...{Style.RESET_ALL}"
-            
-            # Remove ANSI codes for width calculation
-                clean_text = wheels_text.replace(Fore.CYAN, '').replace(Fore.GREEN, '').replace(Fore.MAGENTA, '').replace(Fore.WHITE, '').replace(Style.RESET_ALL, '')
-                text_width = len(clean_text)
-                padding = max(0, (terminal_width - text_width) // 2)
-            
-                print(f"\r{' ' * padding}{wheels_text}", end='', flush=True)
+            while not stop_spinner.is_set() and (time.time() - start_time) < self.scan_timeout:
+                spinner_char = spinners[frame % len(spinners)]
+                print(f"\r{Fore.CYAN}{spinner_char} Scanning configuration files...{Style.RESET_ALL}", end='', flush=True)
                 frame += 1
                 time.sleep(0.1)
-    
-    # Start spinner in background
+        
         spinner_thread = threading.Thread(target=spin_animation)
         spinner_thread.daemon = True
         spinner_thread.start()
-    
-    # Perform the actual scanning
+        
+        total_scanned = 0
         for config_path in self.system_paths['configs']:
             if os.path.exists(config_path):
-                self._scan_directory(config_path, results['configs'], 'config')
-    
-    # Stop the spinner
+                scanned = self._scan_directory(config_path, results['configs'], 'config', 
+                                              max_depth=self.max_depth, 
+                                              max_files=self.max_files_per_scan)
+                total_scanned += scanned
+                if self.max_files_per_scan > 0 and len(results['configs']) >= self.max_files_per_scan:
+                    print(f"\n{Fore.YELLOW}⚠ Reached file limit ({self.max_files_per_scan}){Style.RESET_ALL}")
+                    break
+        
         stop_spinner.set()
         spinner_thread.join(timeout=0.5)
-    
-    # Clear the spinner line
+        
         terminal_width = shutil.get_terminal_size().columns
         print(f"\r{' ' * terminal_width}", end='\r')
+        print(f"{Fore.GREEN}✓ Found {len(results['configs'])} configuration items (scanned {total_scanned} total){Style.RESET_ALL}\n")
     
-    # Show results
-        print(f"{Fore.GREEN}✓ Found {len(results['configs'])} configuration items{Style.RESET_ALL}\n")
-
     def _scan_logs(self, results):
-        """Scan log files with continuous spinning animation"""
+        """Scan log files with timeout"""
         print(f"{Fore.YELLOW}Scanning system logs...{Style.RESET_ALL}")
-    
-        import threading
-        import shutil
-        import time
-    
+        
         stop_spinner = threading.Event()
-    
+        
         def spin_animation():
             wheels = ['◐', '◓', '◑', '◒']
-            colors = [Fore.BLUE, Fore.CYAN, Fore.LIGHTBLUE_EX]
-        
             frame = 0
-            while not stop_spinner.is_set():
-                left = f"{colors[0]}{wheels[frame % 4]}{Style.RESET_ALL}"
-                center = f"{colors[1]}{wheels[(frame + 1) % 4]}{Style.RESET_ALL}"
-                right = f"{colors[2]}{wheels[(frame + 2) % 4]}{Style.RESET_ALL}"
+            start_time = time.time()
             
-                terminal_width = shutil.get_terminal_size().columns
-                wheels_text = f"{left}   {center}   {right}  {Fore.WHITE}Processing log files...{Style.RESET_ALL}"
-            
-                clean_text = wheels_text.replace(Fore.BLUE, '').replace(Fore.CYAN, '').replace(Fore.LIGHTBLUE_EX, '').replace(Fore.WHITE, '').replace(Style.RESET_ALL, '')
-                text_width = len(clean_text)
-                padding = max(0, (terminal_width - text_width) // 2)
-            
-                print(f"\r{' ' * padding}{wheels_text}", end='', flush=True)
+            while not stop_spinner.is_set() and (time.time() - start_time) < self.scan_timeout:
+                spinner_char = wheels[frame % 4]
+                print(f"\r{Fore.CYAN}{spinner_char} Scanning log files...{Style.RESET_ALL}", end='', flush=True)
                 frame += 1
                 time.sleep(0.1)
-    
+        
         spinner_thread = threading.Thread(target=spin_animation)
         spinner_thread.daemon = True
         spinner_thread.start()
-    
+        
+        total_scanned = 0
         for log_path in self.system_paths['logs']:
             if os.path.exists(log_path):
-                self._scan_directory(log_path, results['logs'], 'log')
-    
+                scanned = self._scan_directory(log_path, results['logs'], 'log',
+                                              max_depth=self.max_depth,
+                                              max_files=self.max_files_per_scan)
+                total_scanned += scanned
+                if self.max_files_per_scan > 0 and len(results['logs']) >= self.max_files_per_scan:
+                    print(f"\n{Fore.YELLOW}⚠ Reached file limit ({self.max_files_per_scan}){Style.RESET_ALL}")
+                    break
+        
         stop_spinner.set()
         spinner_thread.join(timeout=0.5)
-    
+        
         terminal_width = shutil.get_terminal_size().columns
         print(f"\r{' ' * terminal_width}", end='\r')
+        print(f"{Fore.GREEN}✓ Found {len(results['logs'])} log files (scanned {total_scanned} total){Style.RESET_ALL}\n")
     
-        print(f"{Fore.GREEN}✓ Found {len(results['logs'])} log files{Style.RESET_ALL}\n")
-
     def _scan_databases(self, results):
-        """Scan database files with continuous spinning animation"""
+        """Scan database files with timeout"""
         print(f"{Fore.YELLOW}Scanning databases...{Style.RESET_ALL}")
-    
-        import threading
-        import shutil
-        import time
-    
+        
         stop_spinner = threading.Event()
-    
+        
         def spin_animation():
             wheels = ['⣾', '⣽', '⣻', '⢿', '⡿', '⣟', '⣯', '⣷']
-            colors = [Fore.MAGENTA, Fore.LIGHTMAGENTA_EX, Fore.LIGHTRED_EX]
-        
             frame = 0
-            while not stop_spinner.is_set():
-                left = f"{colors[0]}{wheels[frame % 8]}{Style.RESET_ALL}"
-                center = f"{colors[1]}{wheels[(frame + 2) % 8]}{Style.RESET_ALL}"
-                right = f"{colors[2]}{wheels[(frame + 4) % 8]}{Style.RESET_ALL}"
+            start_time = time.time()
             
-                terminal_width = shutil.get_terminal_size().columns
-                wheels_text = f"{left}   {center}   {right}  {Fore.WHITE}Querying databases...{Style.RESET_ALL}"
-            
-                clean_text = wheels_text.replace(Fore.MAGENTA, '').replace(Fore.LIGHTMAGENTA_EX, '').replace(Fore.LIGHTRED_EX, '').replace(Fore.WHITE, '').replace(Style.RESET_ALL, '')
-                text_width = len(clean_text)
-                padding = max(0, (terminal_width - text_width) // 2)
-            
-                print(f"\r{' ' * padding}{wheels_text}", end='', flush=True)
+            while not stop_spinner.is_set() and (time.time() - start_time) < self.scan_timeout:
+                spinner_char = wheels[frame % 8]
+                print(f"\r{Fore.CYAN}{spinner_char} Scanning databases...{Style.RESET_ALL}", end='', flush=True)
                 frame += 1
                 time.sleep(0.1)
-    
+        
         spinner_thread = threading.Thread(target=spin_animation)
         spinner_thread.daemon = True
         spinner_thread.start()
-    
+        
+        total_scanned = 0
         for db_path in self.system_paths['databases']:
             if os.path.exists(db_path):
-                self._scan_directory(db_path, results['databases'], 'database')
-    
+                scanned = self._scan_directory(db_path, results['databases'], 'database',
+                                              max_depth=self.max_depth,
+                                              max_files=self.max_files_per_scan)
+                total_scanned += scanned
+                if self.max_files_per_scan > 0 and len(results['databases']) >= self.max_files_per_scan:
+                    print(f"\n{Fore.YELLOW}⚠ Reached file limit ({self.max_files_per_scan}){Style.RESET_ALL}")
+                    break
+        
         stop_spinner.set()
         spinner_thread.join(timeout=0.5)
-    
+        
         terminal_width = shutil.get_terminal_size().columns
         print(f"\r{' ' * terminal_width}", end='\r')
+        print(f"{Fore.GREEN}✓ Found {len(results['databases'])} database files (scanned {total_scanned} total){Style.RESET_ALL}\n")
     
-        print(f"{Fore.GREEN}✓ Found {len(results['databases'])} database files{Style.RESET_ALL}\n")
-
     def _scan_system_files(self, results):
-        """Scan critical system files with continuous spinning animation"""
+        """Scan critical system files"""
         print(f"{Fore.YELLOW}Scanning critical system files...{Style.RESET_ALL}")
-    
-        import threading
-        import shutil
-        import time
-    
+        
         stop_spinner = threading.Event()
-    
+        
         def spin_animation():
             wheels = ['◢', '◣', '◤', '◥']
-            colors = [Fore.RED, Fore.LIGHTRED_EX, Fore.YELLOW]
-        
             frame = 0
-            while not stop_spinner.is_set():
-                left = f"{colors[0]}{wheels[frame % 4]}{Style.RESET_ALL}"
-                center = f"{colors[1]}{wheels[(frame + 1) % 4]}{Style.RESET_ALL}"
-                right = f"{colors[2]}{wheels[(frame + 2) % 4]}{Style.RESET_ALL}"
+            start_time = time.time()
             
-                terminal_width = shutil.get_terminal_size().columns
-                wheels_text = f"{left}   {center}   {right}  {Fore.WHITE}Checking system integrity...{Style.RESET_ALL}"
-            
-                clean_text = wheels_text.replace(Fore.RED, '').replace(Fore.LIGHTRED_EX, '').replace(Fore.YELLOW, '').replace(Fore.WHITE, '').replace(Style.RESET_ALL, '')
-                text_width = len(clean_text)
-                padding = max(0, (terminal_width - text_width) // 2)
-            
-                print(f"\r{' ' * padding}{wheels_text}", end='', flush=True)
+            while not stop_spinner.is_set() and (time.time() - start_time) < self.scan_timeout:
+                spinner_char = wheels[frame % 4]
+                print(f"\r{Fore.CYAN}{spinner_char} Scanning system files...{Style.RESET_ALL}", end='', flush=True)
                 frame += 1
                 time.sleep(0.1)
-    
+        
         spinner_thread = threading.Thread(target=spin_animation)
         spinner_thread.daemon = True
         spinner_thread.start()
-    
+        
         for file_path in self.system_paths['system_files']:
             if os.path.exists(file_path):
                 file_info = self._get_file_info(file_path)
                 file_info['category'] = 'system'
                 results['critical_files'].append(file_info)
-    
+        
         stop_spinner.set()
         spinner_thread.join(timeout=0.5)
-    
+        
         terminal_width = shutil.get_terminal_size().columns
         print(f"\r{' ' * terminal_width}", end='\r')
-    
         print(f"{Fore.GREEN}✓ Found {len(results['critical_files'])} critical system files{Style.RESET_ALL}\n")
-
+    
     def _scan_user_files(self, results):
-        """Scan user files with continuous spinning animation"""
+        """Scan user files with timeout"""
         print(f"{Fore.YELLOW}Scanning user files...{Style.RESET_ALL}")
-    
-        import threading
-        import shutil
-        import time
-    
+        
         stop_spinner = threading.Event()
-    
+        
         def spin_animation():
             wheels = ['▉', '▊', '▋', '▌', '▍', '▎', '▏', '▎', '▍', '▌', '▋', '▊', '▉']
-            colors = [Fore.GREEN, Fore.LIGHTGREEN_EX, Fore.CYAN]
-        
             frame = 0
-            while not stop_spinner.is_set():
-                left = f"{colors[0]}{wheels[frame % len(wheels)]}{Style.RESET_ALL}"
-                center = f"{colors[1]}{wheels[(frame + 3) % len(wheels)]}{Style.RESET_ALL}"
-                right = f"{colors[2]}{wheels[(frame + 6) % len(wheels)]}{Style.RESET_ALL}"
+            start_time = time.time()
             
-                terminal_width = shutil.get_terminal_size().columns
-                wheels_text = f"{left}   {center}   {right}  {Fore.WHITE}Indexing user files...{Style.RESET_ALL}"
-            
-                clean_text = wheels_text.replace(Fore.GREEN, '').replace(Fore.LIGHTGREEN_EX, '').replace(Fore.CYAN, '').replace(Fore.WHITE, '').replace(Style.RESET_ALL, '')
-                text_width = len(clean_text)
-                padding = max(0, (terminal_width - text_width) // 2)
-            
-                print(f"\r{' ' * padding}{wheels_text}", end='', flush=True)
+            while not stop_spinner.is_set() and (time.time() - start_time) < self.scan_timeout:
+                spinner_char = wheels[frame % len(wheels)]
+                print(f"\r{Fore.CYAN}{spinner_char} Scanning user files...{Style.RESET_ALL}", end='', flush=True)
                 frame += 1
                 time.sleep(0.05)
-    
+        
         spinner_thread = threading.Thread(target=spin_animation)
         spinner_thread.daemon = True
         spinner_thread.start()
-    
+        
+        total_scanned = 0
         for user_path in self.system_paths['user_files']:
             if os.path.exists(user_path):
-                self._scan_directory(user_path, results['files'], 'user')
-    
+                scanned = self._scan_directory(user_path, results['files'], 'user',
+                                              max_depth=self.max_depth,
+                                              max_files=self.max_files_per_scan)
+                total_scanned += scanned
+                if self.max_files_per_scan > 0 and len(results['files']) >= self.max_files_per_scan:
+                    print(f"\n{Fore.YELLOW}⚠ Reached file limit ({self.max_files_per_scan}){Style.RESET_ALL}")
+                    break
+        
         stop_spinner.set()
         spinner_thread.join(timeout=0.5)
-    
+        
         terminal_width = shutil.get_terminal_size().columns
         print(f"\r{' ' * terminal_width}", end='\r')
+        print(f"{Fore.GREEN}✓ Found {len(results['files'])} user files (scanned {total_scanned} total){Style.RESET_ALL}\n")
     
-        print(f"{Fore.GREEN}✓ Found {len(results['files'])} user files{Style.RESET_ALL}\n")
-
-    def _scan_directory(self, directory, results_list, category, max_depth=3):
-        """Recursively scan a directory with depth limit"""
+    def _scan_directory(self, directory, results_list, category, max_depth=2, max_files=2000):
+        """Recursively scan a directory with depth and file limits"""
+        skip_dirs = [
+            '/proc', '/sys', '/dev', '/run',
+            '/var/log', '/var/cache', '/var/lib/docker', '/var/lib/containerd',
+            'AppData/Local/Temp', 'C:\\Windows\\Temp', 'C:\\Windows\\Prefetch',
+            'System Volume Information', '$Recycle.Bin', '.git', '__pycache__'
+        ]
+        
+        dir_lower = directory.lower()
+        for skip in skip_dirs:
+            if skip.lower() in dir_lower:
+                return 0
+        
+        file_count = 0
+        processed_count = 0
+        
         try:
             for root, dirs, files in os.walk(directory):
-            # Check depth
                 depth = root.replace(directory, '').count(os.sep)
                 if depth > max_depth:
-                    dirs[:] = []  # Don't go deeper
+                    dirs[:] = []
                     continue
-            
+                
+                dirs[:] = [d for d in dirs if not d.startswith('.') and d not in skip_dirs]
+                
                 for file in files:
+                    if max_files > 0 and file_count >= max_files:
+                        return processed_count
+                    
+                    file_count += 1
+                    
+                    if file.startswith('.') and category != 'user':
+                        continue
+                    
                     file_path = os.path.join(root, file)
-                    if os.path.exists(file_path) and os.path.isfile(file_path):
-                        file_info = self._get_file_info(file_path)
-                        file_info['category'] = category
-                        results_list.append(file_info)
-
-
-        except (PermissionError, OSError) as e:
-            print(f"{Fore.RED}Permission denied: {directory}{Style.RESET_ALL}")
- # ======================================ends here==================
+                    
+                    try:
+                        if os.path.exists(file_path) and os.path.isfile(file_path):
+                            if os.path.getsize(file_path) > 100 * 1024 * 1024:
+                                continue
+                            
+                            file_info = self._get_file_info(file_path)
+                            file_info['category'] = category
+                            results_list.append(file_info)
+                            processed_count += 1
+                            
+                            if processed_count % 100 == 0:
+                                print(f"\r  {Fore.CYAN}Processed {processed_count} files...{Style.RESET_ALL}", end='', flush=True)
+                    except (PermissionError, OSError):
+                        continue
+                        
+        except (PermissionError, OSError):
+            pass
+        
+        return processed_count
+    
     def _get_file_info(self, file_path):
         """Get detailed file information"""
         try:
             stat = os.stat(file_path)
-        
-        # Get file hash for integrity checking
             file_hash = self._calculate_hash(file_path)
-        
-        # Get file permissions/attributes
             permissions = self._get_file_permissions(file_path)
-        
+            
             return {
                 'path': file_path,
                 'name': os.path.basename(file_path),
@@ -537,7 +567,6 @@ class SystemIntegrityMonitor:
                 'name': os.path.basename(file_path),
                 'error': str(e)
             }
-
     
     def _calculate_hash(self, file_path):
         """Calculate SHA-256 hash of file"""
@@ -549,48 +578,127 @@ class SystemIntegrityMonitor:
             return sha256.hexdigest()
         except:
             return None
-
+    
+    def _get_file_permissions(self, file_path):
+        """Get file permissions (platform-specific)"""
+        if platform.system().lower() == 'windows':
+            try:
+                return 'readonly' if not os.access(file_path, os.W_OK) else 'read-write'
+            except:
+                return 'unknown'
+        else:
+            try:
+                stat = os.stat(file_path)
+                return oct(stat.st_mode)[-3:]
+            except:
+                return 'unknown'
     
     def _get_file_owner(self, file_path):
         """Get file owner"""
         if platform.system().lower() == 'windows':
             try:
-                # Windows: try to get owner info (simplified)
                 import getpass
                 return getpass.getuser()
             except:
                 return 'unknown'
         else:
-            # Unix-like systems
             try:
                 import pwd
                 stat = os.stat(file_path)
                 return pwd.getpwuid(stat.st_uid).pw_name
-            except ImportError:
+            except:
                 try:
                     import getpass
                     return getpass.getuser()
                 except:
                     return 'unknown'
-            except:
-                return 'unknown'
-
-
+    
     def _is_hidden_file(self, file_path):
         """Check if file is hidden"""
         if platform.system().lower() == 'windows':
             try:
                 import ctypes
                 attrs = ctypes.windll.kernel32.GetFileAttributesW(file_path)
-                return attrs != -1 and bool(attrs & 2)  # FILE_ATTRIBUTE_HIDDEN
-            except (ImportError, AttributeError):
+                return attrs != -1 and bool(attrs & 2)
+            except:
                 return os.path.basename(file_path).startswith('.')
         else:
             return os.path.basename(file_path).startswith('.')
-
-    # ==============================
-    # INTEGRITY CHECKING
-    # ==============================
+    
+    def _format_size(self, size_bytes):
+        """Format file size"""
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if size_bytes < 1024.0:
+                return f"{size_bytes:.1f} {unit}"
+            size_bytes /= 1024.0
+        return f"{size_bytes:.1f} TB"
+    
+    def _print_progress(self, current, total, message, for_pdf=False):
+        """Print progress bar"""
+        percent = (current / total) * 100 if total > 0 else 0
+        bar_length = 40
+        filled_length = int(bar_length * current // total) if total > 0 else 0
+        
+        if for_pdf:
+            bar = '=' * filled_length + '-' * (bar_length - filled_length)
+            progress_text = f"{message}: [{bar}] {percent:.1f}% [{current}/{total}]"
+        else:
+            bar = '█' * filled_length + '░' * (bar_length - filled_length)
+            progress_text = f"{message}: |{bar}| {percent:.1f}% [{current}/{total}]"
+        
+        terminal_width = shutil.get_terminal_size().columns
+        clean_text = progress_text.replace(Fore.CYAN, '').replace(Fore.GREEN, '').replace(Fore.MAGENTA, '').replace(Style.RESET_ALL, '')
+        text_width = len(clean_text)
+        padding = max(0, (terminal_width - text_width) // 2)
+        
+        print(f"\r{' ' * padding}{progress_text}", end='', flush=True)
+        
+        if current == total:
+            print()
+    
+    def create_baseline(self, scan_results=None):
+        """Create a baseline of system state"""
+        if scan_results is None:
+            scan_results = self.scan_system()
+        
+        baseline = {
+            'created': datetime.now().isoformat(),
+            'system_info': scan_results['system_info'],
+            'files': scan_results['files'],
+            'configs': scan_results['configs'],
+            'logs': scan_results['logs'],
+            'databases': scan_results['databases'],
+            'critical_files': scan_results['critical_files'],
+            'scan_preferences': {
+                'max_files': self.max_files_per_scan,
+                'max_depth': self.max_depth,
+                'timeout': self.scan_timeout
+            }
+        }
+        
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        baseline_file = os.path.join(self.baseline_dir, f'baseline_{timestamp}.json')
+        
+        with open(baseline_file, 'w') as f:
+            json.dump(baseline, f, indent=2)
+        
+        latest_file = os.path.join(self.baseline_dir, 'latest_baseline.json')
+        with open(latest_file, 'w') as f:
+            json.dump(baseline, f, indent=2)
+        
+        print(f"\n{Fore.GREEN}✓ Baseline created successfully{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}Saved to: {baseline_file}{Style.RESET_ALL}")
+        
+        return baseline
+    
+    def _load_baseline(self):
+        """Load the latest baseline"""
+        latest_file = os.path.join(self.baseline_dir, 'latest_baseline.json')
+        if os.path.exists(latest_file):
+            with open(latest_file, 'r') as f:
+                return json.load(f)
+        return None
+    
     def check_integrity(self, scan_results=None):
         """Check system integrity against baseline"""
         if scan_results is None:
@@ -615,7 +723,6 @@ class SystemIntegrityMonitor:
             'suspicious_changes': []
         }
         
-        # Create lookup dictionaries
         baseline_files = {f['path']: f for f in baseline.get('files', [])}
         baseline_configs = {f['path']: f for f in baseline.get('configs', [])}
         baseline_logs = {f['path']: f for f in baseline.get('logs', [])}
@@ -631,10 +738,10 @@ class SystemIntegrityMonitor:
         all_current.update({f['path']: f for f in scan_results['databases']})
         all_current.update({f['path']: f for f in scan_results['critical_files']})
         
-        # Check for modifications and deletions
         total_items = len(all_baseline)
         for i, (path, baseline_info) in enumerate(all_baseline.items(), 1):
             self._print_progress(i, total_items, "Analyzing files")
+            
             if path not in all_current:
                 changes['deleted_files'].append({
                     'path': path,
@@ -645,7 +752,6 @@ class SystemIntegrityMonitor:
             
             current_info = all_current[path]
             
-            # Check hash
             if baseline_info.get('hash') != current_info.get('hash'):
                 change_type = self._analyze_change(baseline_info, current_info)
                 changes['modified_files'].append({
@@ -656,7 +762,6 @@ class SystemIntegrityMonitor:
                     'severity': self._determine_severity(path, change_type)
                 })
             
-            # Check permissions
             if baseline_info.get('permissions') != current_info.get('permissions'):
                 changes['permission_changes'].append({
                     'path': path,
@@ -664,7 +769,6 @@ class SystemIntegrityMonitor:
                     'new_perms': current_info.get('permissions')
                 })
         
-        # Check for new files
         for path, current_info in all_current.items():
             if path not in all_baseline:
                 changes['new_files'].append({
@@ -679,7 +783,6 @@ class SystemIntegrityMonitor:
         """Analyze the type of change made to a file"""
         reasons = []
         
-        # Size change
         if baseline.get('size') != current.get('size'):
             size_diff = current.get('size', 0) - baseline.get('size', 0)
             if size_diff > 0:
@@ -687,7 +790,6 @@ class SystemIntegrityMonitor:
             else:
                 reasons.append(f"Size decreased by {self._format_size(abs(size_diff))}")
         
-        # Timestamp analysis
         baseline_modified = datetime.fromisoformat(baseline.get('modified', '2000-01-01'))
         current_modified = datetime.fromisoformat(current.get('modified', '2000-01-01'))
         
@@ -700,7 +802,6 @@ class SystemIntegrityMonitor:
             else:
                 reasons.append(f"Modified {time_diff.days} days ago")
         
-        # Extension change (possible masquerading)
         if baseline.get('extension') != current.get('extension'):
             reasons.append(f"File extension changed from {baseline.get('extension')} to {current.get('extension')}")
         
@@ -717,52 +818,6 @@ class SystemIntegrityMonitor:
         else:
             return 'LOW'
     
-    # ==============================
-    # BASELINE MANAGEMENT
-    # ==============================
-    def create_baseline(self, scan_results=None):
-        """Create a baseline of system state"""
-        if scan_results is None:
-            scan_results = self.scan_system()
-        
-        baseline = {
-            'created': datetime.now().isoformat(),
-            'system_info': scan_results['system_info'],
-            'files': scan_results['files'],
-            'configs': scan_results['configs'],
-            'logs': scan_results['logs'],
-            'databases': scan_results['databases'],
-            'critical_files': scan_results['critical_files']
-        }
-        
-        # Save baseline
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        baseline_file = os.path.join(self.baseline_dir, f'baseline_{timestamp}.json')
-        
-        with open(baseline_file, 'w') as f:
-            json.dump(baseline, f, indent=2)
-        
-        # Also save as latest baseline
-        latest_file = os.path.join(self.baseline_dir, 'latest_baseline.json')
-        with open(latest_file, 'w') as f:
-            json.dump(baseline, f, indent=2)
-        
-        print(f"\n{Fore.GREEN}✓ Baseline created successfully{Style.RESET_ALL}")
-        print(f"{Fore.CYAN}Saved to: {baseline_file}{Style.RESET_ALL}")
-        
-        return baseline
-    
-    def _load_baseline(self):
-        """Load the latest baseline"""
-        latest_file = os.path.join(self.baseline_dir, 'latest_baseline.json')
-        if os.path.exists(latest_file):
-            with open(latest_file, 'r') as f:
-                return json.load(f)
-        return None
-    
-    # ==============================
-    # REPORT GENERATION
-    # ==============================
     def generate_json_report(self, changes=None, scan_results=None):
         """Generate a JSON format integrity report"""
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -771,15 +826,19 @@ class SystemIntegrityMonitor:
         if scan_results is None:
             scan_results = self.scan_system()
     
-    # Prepare report data
         report_data = {
             'metadata': {
                 'report_type': 'integrity_report',
-                'format': 'json',  # Add format here if needed
+                'format': 'json',
                 'generated': datetime.now().isoformat(),
                 'version': '2.0.59'
             },
             'system_info': scan_results['system_info'],
+            'scan_preferences': {
+                'max_files': self.max_files_per_scan,
+                'max_depth': self.max_depth,
+                'timeout': self.scan_timeout
+            },
             'summary': {
                 'total_files_scanned': (
                     len(scan_results['files']) +
@@ -797,7 +856,7 @@ class SystemIntegrityMonitor:
                 }
             },
             'inventory': {
-                'critical_files': scan_results['critical_files'][:100],  # Limit for readability
+                'critical_files': scan_results['critical_files'][:100],
                 'configs': scan_results['configs'][:100],
                 'logs': scan_results['logs'][:100],
                 'databases': scan_results['databases'][:100],
@@ -805,13 +864,8 @@ class SystemIntegrityMonitor:
             }
         }
     
-    # Add changes if available
         if changes:
-            # Count by severity
-            critical_count = 0
-            high_count = 0
-            medium_count = 0
-            low_count = 0
+            critical_count = high_count = medium_count = low_count = 0
         
             for change_type in ['new_files', 'modified_files', 'deleted_files']:
                 for item in changes.get(change_type, []):
@@ -845,7 +899,6 @@ class SystemIntegrityMonitor:
                 }
             }
     
-    # Write JSON file
         try:
             with open(report_file, 'w', encoding='utf-8') as f:
                 json.dump(report_data, f, indent=2, default=str)
@@ -855,13 +908,11 @@ class SystemIntegrityMonitor:
             return None
     
         return report_file
-
-    # ===================
+    
     def generate_pdf_report(self, changes=None, scan_results=None):
-        """Generate a formatted PDF integrity report with DSTerminal logo"""
+        """Generate PDF report (simplified version)"""
         try:
             from fpdf import FPDF
-            import textwrap
             import os
             from datetime import datetime
         except ImportError:
@@ -874,97 +925,29 @@ class SystemIntegrityMonitor:
         if scan_results is None:
             scan_results = self.scan_system()
     
-    # Create PDF with Unicode support
         pdf = FPDF()
         pdf.add_page()
-    
-    # Add Unicode font support (use built-in fonts that support Unicode)
         pdf.set_font("Helvetica", size=10)
-    
-    # ==================== HEADER WITH ASCII LOGO ====================
-    # Use ASCII art that's safe for PDF
-        pdf.set_font("Courier", size=8)
-    
-    # Center the ASCII logo
-        page_width = pdf.w - 2 * pdf.l_margin
-        logo_lines = [
-            "+--------------------------------------------------+",
-            "|     DSTERMINAL INTEGRITY MONITOR                |",
-            "|                                                  |",
-            "|     ██████╗ ███████╗████████╗███████╗██████╗    |",
-            "|     ██╔══██╗██╔════╝╚══██╔══╝██╔════╝██╔══██╗   |",
-            "|     ██║  ██║███████╗   ██║   █████╗  ██████╔╝   |",
-            "|     ██║  ██║╚════██║   ██║   ██╔══╝  ██╔══██╗   |",
-            "|     ██████╔╝███████║   ██║   ███████╗██║  ██║   |",
-            "|     ╚═════╝ ╚══════╝   ╚═╝   ╚══════╝╚═╝  ╚═╝   |",
-            "|                                                  |",
-            "+--------------------------------------------------+"
-        ]
-    
-        for line in logo_lines:
-        # Replace Unicode box characters with ASCII if needed
-            safe_line = line.replace('╔', '+').replace('╗', '+').replace('╚', '+').replace('╝', '+')
-            safe_line = safe_line.replace('═', '-').replace('║', '|')
         
-            line_width = pdf.get_string_width(safe_line)
-            x = (page_width - line_width) / 2 + pdf.l_margin
-            pdf.set_x(x)
-            pdf.cell(line_width, 4, safe_line, ln=True)
-    
-        pdf.ln(5)
-    
-    # ==================== TITLE ====================
         pdf.set_font("Helvetica", 'B', 16)
-        title = "SYSTEM INTEGRITY REPORT"
-        title_width = pdf.get_string_width(title)
-        x = (page_width - title_width) / 2 + pdf.l_margin
-        pdf.set_x(x)
-        pdf.cell(title_width, 10, title, ln=True)
-    
-        pdf.set_font("Helvetica", size=10)
+        pdf.cell(0, 10, "SYSTEM INTEGRITY REPORT", 0, 1, 'C')
         pdf.ln(5)
-    
-    # ==================== METADATA SECTION ====================
-        pdf.set_fill_color(230, 230, 250)  # Light lavender
+        
         pdf.set_font("Helvetica", 'B', 11)
-        pdf.cell(0, 8, "REPORT METADATA", 0, 1, 'L', 1)
+        pdf.cell(0, 8, "REPORT METADATA", 0, 1, 'L')
         pdf.set_font("Helvetica", size=9)
-    
-    # Safe string function to avoid encoding issues
-        def safe_str(text):
-            if text is None:
-                return ""
-        # Replace any problematic characters
-            return str(text).encode('ascii', errors='replace').decode('ascii')
-    
-    # System info
+        
         pdf.cell(40, 6, "Generated:", 0, 0)
-        pdf.cell(0, 6, safe_str(datetime.now().strftime('%Y-%m-%d %H:%M:%S')), 0, 1)
-    
+        pdf.cell(0, 6, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 0, 1)
+        
         pdf.cell(40, 6, "Hostname:", 0, 0)
-        pdf.cell(0, 6, safe_str(scan_results['system_info'].get('hostname', 'Unknown')), 0, 1)
-    
-    # Fix Windows display
-        os_name = scan_results['system_info'].get('os', 'Unknown')
-        os_version = scan_results['system_info'].get('os_version', '')
-        if os_name == 'Windows' and '10.0.' in os_version:
-            build = os_version.split('.')[2] if len(os_version.split('.')) > 2 else '0'
-            if build.isdigit() and int(build) >= 22000:
-                os_name = "Windows 11"
-    
+        pdf.cell(0, 6, scan_results['system_info'].get('hostname', 'Unknown'), 0, 1)
+        
         pdf.cell(40, 6, "OS:", 0, 0)
-        pdf.cell(0, 6, safe_str(f"{os_name} {os_version}"), 0, 1)
-    
-        pdf.cell(40, 6, "Architecture:", 0, 0)
-        pdf.cell(0, 6, safe_str(scan_results['system_info'].get('architecture', 'Unknown')), 0, 1)
+        pdf.cell(0, 6, f"{scan_results['system_info'].get('os', 'Unknown')} {scan_results['system_info'].get('os_version', '')}", 0, 1)
+        
         pdf.ln(5)
-    
-    # ==================== SCAN SUMMARY ====================
-        pdf.set_fill_color(173, 216, 230)  # Light blue
-        pdf.set_font("Helvetica", 'B', 11)
-        pdf.cell(0, 8, "SCAN SUMMARY", 0, 1, 'L', 1)
-        pdf.set_font("Helvetica", size=9)
-    
+        
         total_files = (
             len(scan_results.get('critical_files', [])) +
             len(scan_results.get('configs', [])) +
@@ -972,7 +955,11 @@ class SystemIntegrityMonitor:
             len(scan_results.get('databases', [])) +
             len(scan_results.get('files', []))
         )
-    
+        
+        pdf.set_font("Helvetica", 'B', 11)
+        pdf.cell(0, 8, "SCAN SUMMARY", 0, 1, 'L')
+        pdf.set_font("Helvetica", size=9)
+        
         stats = [
             ("Critical System Files:", len(scan_results.get('critical_files', []))),
             ("Configuration Files:", len(scan_results.get('configs', []))),
@@ -981,121 +968,26 @@ class SystemIntegrityMonitor:
             ("User Files:", len(scan_results.get('files', []))),
             ("TOTAL FILES SCANNED:", total_files)
         ]
-    
+        
         for label, value in stats:
             pdf.cell(50, 6, label, 0, 0)
             pdf.cell(0, 6, str(value), 0, 1)
+        
         pdf.ln(5)
-    
-    # ==================== INTEGRITY FINDINGS ====================
-        if changes and any([changes.get('new_files', []), 
-                            changes.get('modified_files', []), 
-                            changes.get('deleted_files', [])]):
-            pdf.set_fill_color(255, 228, 225)  # Misty rose
+        
+        if changes and any([changes.get('new_files', []), changes.get('modified_files', []), changes.get('deleted_files', [])]):
             pdf.set_font("Helvetica", 'B', 11)
-            pdf.cell(0, 8, "INTEGRITY FINDINGS", 0, 1, 'L', 1)
+            pdf.cell(0, 8, "INTEGRITY FINDINGS", 0, 1, 'L')
             pdf.set_font("Helvetica", size=9)
-        
-        # Change summary
-            change_stats = [
-                ("New Files:", len(changes.get('new_files', []))),
-                ("Modified Files:", len(changes.get('modified_files', []))),
-                ("Deleted Files:", len(changes.get('deleted_files', []))),
-            ]
-        
-            for label, value in change_stats:
-                pdf.cell(40, 5, label, 0, 0)
-                pdf.cell(0, 5, str(value), 0, 1)
-        
-        # Critical changes
-            critical_items = []
-            for change_type in ['new_files', 'modified_files', 'deleted_files']:
-                for item in changes.get(change_type, []):
-                    if item.get('severity') in ['CRITICAL', 'HIGH']:
-                        critical_items.append((change_type, item))
-        
-            if critical_items:
-                pdf.ln(3)
-                pdf.set_text_color(255, 0, 0)  # Red
-                pdf.set_font("Helvetica", 'B', 10)
-                pdf.cell(0, 6, "CRITICAL/HIGH SEVERITY CHANGES:", 0, 1)
-                pdf.set_text_color(0, 0, 0)  # Back to black
-                pdf.set_font("Helvetica", size=8)
             
-                for change_type, item in critical_items[:10]:
-                    path = safe_str(item.get('path', 'Unknown'))
-                    if len(path) > 70:
-                        path = path[:67] + "..."
-                    pdf.cell(15, 4, f"[{item.get('severity', 'UNKNOWN')}]", 0, 0)
-                    pdf.multi_cell(0, 4, path)
+            pdf.cell(40, 5, f"New Files: {len(changes.get('new_files', []))}", 0, 1)
+            pdf.cell(40, 5, f"Modified Files: {len(changes.get('modified_files', []))}", 0, 1)
+            pdf.cell(40, 5, f"Deleted Files: {len(changes.get('deleted_files', []))}", 0, 1)
         else:
-            pdf.set_text_color(0, 128, 0)  # Green
+            pdf.set_text_color(0, 128, 0)
             pdf.set_font("Helvetica", 'B', 11)
             pdf.cell(0, 8, "✓ SYSTEM INTEGRITY INTACT - No changes detected", 0, 1)
-            pdf.set_text_color(0, 0, 0)
-    
-        pdf.ln(5)
-    
-    # ==================== FILE INVENTORY SAMPLES ====================
-        pdf.set_fill_color(240, 248, 255)  # Alice blue
-        pdf.set_font("Helvetica", 'B', 11)
-        pdf.cell(0, 8, "RECENT FILES (Sample)", 0, 1, 'L', 1)
-        pdf.set_font("Helvetica", size=8)
-    
-        categories = [
-            ('Critical System Files', scan_results.get('critical_files', [])[:5]),
-            ('Recent Configs', sorted(scan_results.get('configs', []), 
-                                    key=lambda x: x.get('modified', ''), reverse=True)[:5]),
-            ('Recent Logs', sorted(scan_results.get('logs', []), 
-                                key=lambda x: x.get('modified', ''), reverse=True)[:5])
-        ]
-    
-        for cat_name, items in categories:
-            if items:
-                pdf.set_font("Helvetica", 'B', 9)
-                pdf.cell(0, 5, f"{cat_name}:", 0, 1)
-                pdf.set_font("Helvetica", size=8)
-            
-                for item in items:
-                    name = safe_str(item.get('name', 'Unknown'))
-                    if len(name) > 40:
-                        name = name[:37] + "..."
-                    modified = item.get('modified', 'Unknown')[:10] if item.get('modified') else 'Unknown'
-                    pdf.cell(40, 4, modified, 0, 0)
-                    pdf.cell(0, 4, name, 0, 1)
-                pdf.ln(2)
-    
-    # ==================== PROGRESS BAR SUMMARY ====================
-    # Add a progress summary using ASCII instead of Unicode blocks
-        pdf.set_fill_color(220, 220, 220)  # Light gray
-        pdf.set_font("Helvetica", 'B', 10)
-        pdf.cell(0, 6, "SCAN PROGRESS SUMMARY", 0, 1, 'L', 1)
-        pdf.set_font("Helvetica", size=8)
-    
-    # Create ASCII progress bar using = and - instead of blocks
-        total = total_files
-        if total > 0:
-            bar_length = 40
-            filled = bar_length  # 100% complete
         
-        # Use ASCII characters instead of Unicode blocks
-            progress_bar = "[" + "=" * filled + "]" + f" 100% ({total} files)"
-        
-            pdf.cell(0, 4, f"Configuration Files: {len(scan_results.get('configs', []))}", 0, 1)
-            pdf.cell(0, 4, f"Log Files: {len(scan_results.get('logs', []))}", 0, 1)
-            pdf.cell(0, 4, f"Database Files: {len(scan_results.get('databases', []))}", 0, 1)
-            pdf.cell(0, 4, f"System Files: {len(scan_results.get('critical_files', []))}", 0, 1)
-            pdf.cell(0, 4, f"User Files: {len(scan_results.get('files', []))}", 0, 1)
-            pdf.ln(2)
-            pdf.cell(0, 4, f"Progress: {progress_bar}", 0, 1)
-    
-    # ==================== FOOTER ====================
-        pdf.set_y(-30)
-        pdf.set_font("Helvetica", 'I', 8)
-        pdf.cell(0, 5, "Generated by DSTerminal Integrity Monitor v2.0.59", 0, 1, 'C')
-        pdf.cell(0, 5, f"Report: {os.path.basename(report_file)}", 0, 1, 'C')
-    
-    # Save PDF
         try:
             pdf.output(report_file)
             print(f"{Fore.GREEN}✓ PDF report generated: {report_file}{Style.RESET_ALL}")
@@ -1104,32 +996,26 @@ class SystemIntegrityMonitor:
             print(f"{Fore.RED}✗ Failed to generate PDF: {e}{Style.RESET_ALL}")
             return None
     
-        # ======================
     def generate_all_reports(self, changes, scan_results=None):
-        """Generate all report formats (TXT, JSON, PDF)"""
+        """Generate all report formats"""
         if scan_results is None:
             scan_results = self.scan_system()
     
         reports = {}
-    
-    # Generate TXT report (existing)
-        reports['txt'] = self.generate_report(changes, scan_results)
-    
-    # Generate JSON report
         reports['json'] = self.generate_json_report(changes, scan_results)
-    
-    # Generate PDF report
         reports['pdf'] = self.generate_pdf_report(changes, scan_results)
     
         print(f"\n{Fore.GREEN}{'='*60}{Style.RESET_ALL}")
         print(f"{Fore.GREEN}✅ ALL REPORTS GENERATED SUCCESSFULLY{Style.RESET_ALL}")
         print(f"{Fore.GREEN}{'='*60}{Style.RESET_ALL}")
-        print(f"{Fore.CYAN}TXT Report: {reports['txt']}{Style.RESET_ALL}")
-        print(f"{Fore.CYAN}JSON Report: {reports['json']}{Style.RESET_ALL}")
+        if reports['json']:
+            print(f"{Fore.CYAN}JSON Report: {reports['json']}{Style.RESET_ALL}")
         if reports['pdf']:
             print(f"{Fore.CYAN}PDF Report: {reports['pdf']}{Style.RESET_ALL}")
     
         return reports
+
+    # Keep the remaining classes (RealTimeHandler, AlertManager, ForensicAnalyzer, AutoRemediation) as they were
 # =======================end report gen====
     def _generate_report_header(self, scan_results):
         """Generate report header"""
