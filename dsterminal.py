@@ -1122,7 +1122,7 @@ class SecurityTerminal:
         "    ╚═════╝ ╚═╝     ╚═╝     ╚══════╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝",
         "",
         "╠══════════════════════════════════════════════════════════════============══════╣",
-        f"║    Defensive Security Terminal v2.1.0 | {platform.system()} {platform.release()}   ║",
+        f"║    Defensive Security Terminal v2.0.59 | {platform.system()} {platform.release()}   ║",
         "║    Developed by: Spark Wilson Spink | © 2024 | Powered by Stark Expo Tech Exchange║",
         "║    Type 'help' for available commands                                            ║",
         f"║ (🔍, ⚡, 🛡️) 🌐 ⚡ CLI Mode: {'ADMIN' if self.is_admin() else 'USER'}               ",
@@ -1735,7 +1735,7 @@ class SecurityTerminal:
     
     def run(self):
         """Main terminal loop"""
-        print(f"{Fore.GREEN}DSTerminal v2.1.0 | Type 'help' for commands | Workspace: ~/DSTerminal_Workspace{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}DSTerminal v2.0.59 | Type 'help' for commands | Workspace: ~/DSTerminal_Workspace{Style.RESET_ALL}")
         print(f"{Fore.YELLOW}Mode: {'ADMIN' if self.is_admin() else 'USER'}{Style.RESET_ALL}\n")
         
         running = True
@@ -3629,13 +3629,13 @@ class SecurityTerminal:
                 ("integrity list databases", "List database files"),
                 ("integrity list user", "List user files"),
             ]),
-           ("REPORT COMMANDS", [
+            ("REPORT COMMANDS", [
                 ("integrity report", "Generate TXT report"),
                 ("integrity report latest", "Show latest TXT report"),
                 ("integrity report json", "Generate JSON format report"),
                 ("integrity report pdf", "Generate PDF format report (with logo)"),
                 ("integrity report all", "Generate all report formats"),
-            ])
+            ]),
             ("REAL-TIME MONITORING", [
                 ("integrity monitor", "Start real-time monitoring"),
                 ("integrity monitor stop", "Stop real-time monitoring"),
@@ -4944,7 +4944,7 @@ class SecurityTerminal:
         def perform_update(latest_tag):
             """
             Downloads the latest DSTerminal release and updates local version.
-            latest_tag: string, e.g., "v2.1.0"
+            latest_tag: string, e.g., "v2.0.59"
             """
 
             os_type = platform.system().lower()  # 'linux', 'windows', 'darwin'
@@ -5830,7 +5830,7 @@ class SecurityTerminal:
                 os.system('cls' if os.name == 'nt' else 'clear')
                 print(f"\n{color}{centered_banner}{Style.RESET_ALL}")
                 print(f"\n{Fore.CYAN}{self._center_text('═' * 60)}{Style.RESET_ALL}")
-                print(f"{Fore.YELLOW}{self._center_text('DEFENSIVE SECURITY TERMINAL v2.1.0')}{Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}{self._center_text('DEFENSIVE SECURITY TERMINAL v2.0.59')}{Style.RESET_ALL}")
                 print(f"{Fore.CYAN}{self._center_text('═' * 60)}{Style.RESET_ALL}")
                 print(f"{Fore.GREEN}{self._center_text('⚡ System Ready | Mode: HARDENING MODE ⚡')}{Style.RESET_ALL}")
                 time.sleep(0.2)
@@ -6338,7 +6338,7 @@ class SecurityTerminal:
                             if hasattr(self, 'integrity') and self.integrity:
                                 scan_results = self.integrity.scan_system()
                                 changes = self.integrity.check_integrity(scan_results)
-                                self.integrity.generate_json_report(changes, scan_results, format="json")
+                                self.integrity.generate_json_report(changes, scan_results)
                             else:
                                 print(f"{Fore.RED}Integrity monitor not initalized{Style.RESET_ALL}") 
                         elif args[1] == "pdf":
@@ -6786,7 +6786,7 @@ class SecurityTerminal:
     
     # Create header
         print(f"\n{Fore.RED}╔{'═' * (terminal_width-2)}╗{Style.RESET_ALL}")
-        print(f"{Fore.RED}║{Fore.CYAN}{'DSTerminal v2.1.0 - Command Reference Manual'.center(terminal_width-2)}{Fore.RED}║{Style.RESET_ALL}")
+        print(f"{Fore.RED}║{Fore.CYAN}{'DSTerminal v2.0.59 - Command Reference Manual'.center(terminal_width-2)}{Fore.RED}║{Style.RESET_ALL}")
         print(f"{Fore.RED}║{Fore.YELLOW}{'INTERACTIVE COMMAND MENU'.center(terminal_width-2)}{Fore.RED}║{Style.RESET_ALL}")
         print(f"{Fore.RED}╠{'═' * (terminal_width-2)}╣{Style.RESET_ALL}")
     
