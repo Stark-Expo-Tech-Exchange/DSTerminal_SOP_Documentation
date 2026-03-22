@@ -550,18 +550,7 @@ class SystemIntegrityMonitor:
         except:
             return None
 
-    def _is_hidden_file(self, file_path):
-        """Check if file is hidden"""
-        if platform.system().lower() == 'windows':
-            try:
-                import ctypes
-                attrs = ctypes.windll.kernel32.GetFileAttributesW(file_path)
-                return attrs != -1 and bool(attrs & 2)  # FILE_ATTRIBUTE_HIDDEN
-            except (ImportError, AttributeError):
-                return os.path.basename(file_path).startswith('.')
-        else:
-            return os.path.basename(file_path).startswith('.')
-
+    
     def _get_file_owner(self, file_path):
         """Get file owner"""
         if platform.system().lower() == 'windows':
