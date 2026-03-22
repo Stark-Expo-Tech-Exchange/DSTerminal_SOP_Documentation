@@ -1,4 +1,6 @@
 import os
+
+
 import sys
 import io
 import glob
@@ -58,6 +60,9 @@ except ImportError:
             pass
     
     COLORS_AVAILABLE = False
+
+# Add these imports if not already present
+from integrity_monitor import SystemIntegrityMonitor, AlertManager, ForensicAnalyzer, AutoRemediation
 
 # Try to import integrity monitor
 try:
@@ -629,23 +634,25 @@ class SecurityTerminal:
     UNDERLINE = '\033[4m'
     REVERSE = '\033[7m'
     RESET_ALL = '\033[0m'
+ 
     def __init__(self, workspace_root="."):
         self.current_dir = workspace_root
         self.workspace_root = workspace_root
         self.crypto = CryptoEngine(os.getcwd())
-        # self.integrity = SystemIntegrityMonitor()
-            # Initialize integrity monitor if available
-         # Use the global variable
+    
+    # Use the global variable
         global INTEGRITY_AVAILABLE
-        
-        # Initialize integrity monitor if available
+    
+    # Initialize integrity monitor if available
         if INTEGRITY_AVAILABLE:
             try:
                 self.integrity = SystemIntegrityMonitor()
-                # Create data directories if they don't exist
+            # Create data directories if they don't exist
                 os.makedirs("data/baselines", exist_ok=True)
                 os.makedirs("data/integrity_reports", exist_ok=True)
                 os.makedirs("data/quarantine", exist_ok=True)
+
+                self.integrity_monitor = self.integrity
                 if COLORS_AVAILABLE:
                     print(f"{Fore.GREEN}✓ Integrity Monitor initialized{Style.RESET_ALL}")
                 else:
@@ -656,20 +663,38 @@ class SecurityTerminal:
                 else:
                     print(f"✗ Failed to initialize Integrity Monitor: {e}")
                 self.integrity = None
+                self.integrity_monitor = None
                 INTEGRITY_AVAILABLE = False
         else:
             self.integrity = None
+            self.integrity_monitor = None
             if COLORS_AVAILABLE:
                 print(f"{Fore.YELLOW}⚠ Integrity Monitor disabled{Style.RESET_ALL}")
             else:
                 print("⚠ Integrity Monitor disabled")
-        
-        # Initialize alert manager later when needed
-        self.alert_manager = None
+    
+    # Initialize alert manager and other components - FIXED INDENTATION
+        if INTEGRITY_AVAILABLE and self.integrity_monitor:
+            try:
+            # Import the classes - these should already be imported at the top
+                self.alert_manager = AlertManager(self.integrity_monitor)
+                self.forensic_analyzer = ForensicAnalyzer(self.integrity_monitor)
+                self.auto_remediation = AutoRemediation(self.integrity_monitor)
+            
+                if COLORS_AVAILABLE:
+                    print(f"{Fore.GREEN}✓ Alert Manager initialized{Style.RESET_ALL}")
+            except Exception as e:
+                if COLORS_AVAILABLE:
+                    print(f"{Fore.YELLOW}⚠ Alert Manager initialization failed: {e}{Style.RESET_ALL}")
+                self.alert_manager = None
+                self.forensic_analyzer = None
+                self.auto_remediation = None
+        else:
+            self.alert_manager = None
+            self.forensic_analyzer = None
+            self.auto_remediation = None
 
-        # Initialize alert manager later when needed
-        self.alert_manager = None
-
+    # Rest of your initialization code
         self.console = Console()
         self.scan_queue = queue.Queue()
         self.scan_results = {}
@@ -681,29 +706,24 @@ class SecurityTerminal:
         self.services_found = []
         self.nmap_mode = False
 
-        # Set up workspace root and current directory
+    # Set up workspace root and current directory
         self.workspace_root = os.path.abspath("DSTerminal_Workspace")
         self.current_dir = self.workspace_root
-        
-        # Create workspace if it doesn't exist
+    
+    # Create workspace if it doesn't exist
         if not os.path.exists(self.workspace_root):
             os.makedirs(self.workspace_root)
-            # print(f"{Fore.GREEN}[+] Created workspace: {self.workspace_root}{Style.RESET_ALL}")
-        
-        # Create default directories
+    
+    # Create default directories
         default_dirs = ["exploits", "reports", "sandbox", "scans"]
         for dir_name in default_dirs:
             dir_path = os.path.join(self.workspace_root, dir_name)
             if not os.path.exists(dir_path):
                 os.makedirs(dir_path)
-        
+    
         self.terminal_width = self._get_terminal_width()
-
-        # Initialize encryption
-        # self.cipher = None
-        # self.init_cipher()
- 
-        # Virtual filesystem directory
+    
+    # Virtual filesystem directory
         self.vfs_root = os.path.expanduser("~/.dsterminal_vfs")
         self.ensure_vfs()
 

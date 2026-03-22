@@ -23,7 +23,20 @@ import glob  # Added missing import
 from datetime import datetime, timedelta
 from pathlib import Path
 import psutil  # You'll need to install: pip install psutil
-import winreg  # For Windows registry (Windows only)
+
+# Platform-specific imports
+if platform.system().lower() == 'windows':
+    try:
+        import winreg  # For Windows registry (Windows only)
+    except ImportError:
+        winreg = None
+        print("Warning: winreg module not available")
+else:
+    # Create a dummy module for non-Windows platforms
+    class DummyWinreg:
+        def __getattr__(self, name):
+            return None
+    winreg = DummyWinreg()
 
 try:
     from colorama import init, Fore, Back, Style
@@ -65,7 +78,11 @@ except ImportError:
     
     print(f"{Fore.YELLOW}⚠ Warning: watchdog not installed. Real-time monitoring will not work.{Style.RESET_ALL}")
     print(f"{Fore.YELLOW}  Install with: pip install watchdog{Style.RESET_ALL}")
+
+
 # ======end watchdog here from above===========
+
+
 class SystemIntegrityMonitor:
     def __init__(self):
         self.db_file = "data/system_integrity.db"
@@ -533,34 +550,42 @@ class SystemIntegrityMonitor:
         except:
             return None
 
-    def _get_file_permissions(self, file_path):
-        """Get file permissions (platform-specific)"""
+    def _is_hidden_file(self, file_path):
+        """Check if file is hidden"""
         if platform.system().lower() == 'windows':
             try:
-            # Windows: check if file is read-only
-                return 'readonly' if not os.access(file_path, os.W_OK) else 'read-write'
-            except:
-                return 'unknown'
+                import ctypes
+                attrs = ctypes.windll.kernel32.GetFileAttributesW(file_path)
+                return attrs != -1 and bool(attrs & 2)  # FILE_ATTRIBUTE_HIDDEN
+            except (ImportError, AttributeError):
+                return os.path.basename(file_path).startswith('.')
         else:
-        # Unix-like: get octal permissions
-            try:
-                stat = os.stat(file_path)
-                return oct(stat.st_mode)[-3:]
-            except:
-                return 'unknown'
+            return os.path.basename(file_path).startswith('.')
 
     def _get_file_owner(self, file_path):
         """Get file owner"""
-        try:
-            import pwd
-            stat = os.stat(file_path)
-            return pwd.getpwuid(stat.st_uid).pw_name
-        except:
+        if platform.system().lower() == 'windows':
             try:
+                # Windows: try to get owner info (simplified)
                 import getpass
                 return getpass.getuser()
             except:
                 return 'unknown'
+        else:
+            # Unix-like systems
+            try:
+                import pwd
+                stat = os.stat(file_path)
+                return pwd.getpwuid(stat.st_uid).pw_name
+            except ImportError:
+                try:
+                    import getpass
+                    return getpass.getuser()
+                except:
+                    return 'unknown'
+            except:
+                return 'unknown'
+
 
     def _is_hidden_file(self, file_path):
         """Check if file is hidden"""
@@ -569,10 +594,11 @@ class SystemIntegrityMonitor:
                 import ctypes
                 attrs = ctypes.windll.kernel32.GetFileAttributesW(file_path)
                 return attrs != -1 and bool(attrs & 2)  # FILE_ATTRIBUTE_HIDDEN
-            except:
+            except (ImportError, AttributeError):
                 return os.path.basename(file_path).startswith('.')
         else:
             return os.path.basename(file_path).startswith('.')
+
     # ==============================
     # INTEGRITY CHECKING
     # ==============================
@@ -618,10 +644,8 @@ class SystemIntegrityMonitor:
         
         # Check for modifications and deletions
         total_items = len(all_baseline)
-        current = 0
         for i, (path, baseline_info) in enumerate(all_baseline.items(), 1):
             self._print_progress(i, total_items, "Analyzing files")
-            current = i
             if path not in all_current:
                 changes['deleted_files'].append({
                     'path': path,
