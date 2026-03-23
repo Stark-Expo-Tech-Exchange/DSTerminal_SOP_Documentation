@@ -6406,34 +6406,34 @@ class SecurityTerminal:
                             if self.alert_manager.running:
                                 print(f"{Fore.GREEN}Monitoring is active{Style.RESET_ALL}")
                                 print(f"  Monitored paths: {', '.join(self.alert_manager.monitored_paths)}")
+                            else:
+                                print(f"{Fore.YELLOW}Monitoring is not active{Style.RESET_ALL}")
                         else:
-                            print(f"{Fore.YELLOW}Monitoring is not active{Style.RESET_ALL}")
+                            print(f"{Fore.RED}Alert manager not initialized{Style.RESET_ALL}")
+                    elif len(args) > 1 and args[1] == "check-limit":
+                        if hasattr(self, 'integrity') and self.integrity:
+                            self.integrity.check_inotify_limit()
+                        else:
+                            print(f"{Fore.RED}Integrity monitor not initialized{Style.RESET_ALL}")
                     else:
-                        print(f"{Fore.RED}Alert manager not initialized{Style.RESET_ALL}")
-                elif len(args) > 1 and args[1] == "check-limit":
-                    if hasattr(self, 'integrity') and self.integrity:
-                        self.integrity.check_inotify_limit()
-                    else:
-                        print(f"{Fore.RED}Integrity monitor not initialized{Style.RESET_ALL}")
-                else:
-        # Start real-time monitoring with custom paths
-                    if not hasattr(self, 'alert_manager') or not self.alert_manager:
-                        try:
-                            from integrity_monitor import AlertManager
-                            self.alert_manager = AlertManager(self.integrity)
-                        except ImportError:
-                            print(f"{Fore.RED}AlertManager not available{Style.RESET_ALL}")
-                            self.show_tip(cmd)
-                            return True
+            # Start real-time monitoring with custom paths
+                        if not hasattr(self, 'alert_manager') or not self.alert_manager:
+                            try:
+                                from integrity_monitor import AlertManager
+                                self.alert_manager = AlertManager(self.integrity)
+                            except ImportError:
+                                print(f"{Fore.RED}AlertManager not available{Style.RESET_ALL}")
+                                self.show_tip(cmd)
+                                return True
         
         # Parse optional custom paths
-                    custom_paths = None
-                    if len(args) > 1 and args[1] not in ['stop', 'status', 'check-limit']:
-                        custom_paths = args[1:]
+                        custom_paths = None
+                        if len(args) > 1 and args[1] not in ['stop', 'status', 'check-limit']:
+                            custom_paths = args[1:]
             # Expand user paths
-                        custom_paths = [os.path.expanduser(p) for p in custom_paths]
+                            custom_paths = [os.path.expanduser(p) for p in custom_paths]
         
-                    self.alert_manager.start_monitoring(custom_paths)
+                        self.alert_manager.start_monitoring(custom_paths)
         # =========================
             # integrity alerts [show|clear] [severity]
                 elif subcmd == "alerts":

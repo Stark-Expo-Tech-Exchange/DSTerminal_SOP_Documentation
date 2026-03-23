@@ -1736,16 +1736,16 @@ class AlertManager:
                         print(f"{Fore.RED}Failed to monitor {path}: {e}{Style.RESET_ALL}")
     
             if successful_monitors > 0 and self.observer:
-            self.observer.start()
-            print(f"\n{Fore.GREEN}✅ Real-time monitoring started ({successful_monitors} paths){Style.RESET_ALL}")
-            print(f"{Fore.YELLOW}Press Ctrl+C in the terminal to stop monitoring{Style.RESET_ALL}\n")
+                self.observer.start()
+                print(f"\n{Fore.GREEN}✅ Real-time monitoring started ({successful_monitors} paths){Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}Press Ctrl+C in the terminal to stop monitoring{Style.RESET_ALL}\n")
         
         # Start a thread to keep monitoring active
-            self._monitor_thread = threading.Thread(target=self._keep_monitoring)
-            self._monitor_thread.daemon = True
-            self._monitor_thread.start()
-        else:
-            print(f"{Fore.RED}Failed to start monitoring - no valid paths{Style.RESET_ALL}")
+                self._monitor_thread = threading.Thread(target=self._keep_monitoring)
+                self._monitor_thread.daemon = True
+                self._monitor_thread.start()
+            else:
+                print(f"{Fore.RED}Failed to start monitoring - no valid paths{Style.RESET_ALL}")
     #    /================================
     # ===================================
     # 
