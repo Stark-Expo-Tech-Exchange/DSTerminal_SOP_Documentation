@@ -83,7 +83,10 @@ class SystemIntegrityMonitor:
         self.report_dir = "data/integrity_reports"
         self.baseline_dir = "data/baselines"
         self.terminal_width = shutil.get_terminal_size().columns
-        
+        self.alerts_dir = "data/alerts"
+        self.qurantine_dir = "data/quarantine"
+
+
         # Default scan limits
         self.max_files_per_scan = 2000
         self.max_depth = 2
@@ -145,6 +148,30 @@ class SystemIntegrityMonitor:
         
         print(f"\n{Fore.GREEN}✓ Preferences configured. Starting scan...{Style.RESET_ALL}\n")
     
+    def check_inotify_limit(self):
+        """Check and suggest increasing inotify watch limit on Linux"""
+        if platform.system().lower() != 'linux':
+            return
+    
+        try:
+            with open('/proc/sys/fs/inotify/max_user_watches', 'r') as f:
+                current_limit = int(f.read().strip())
+        
+            print(f"\n{Fore.CYAN}Inotify Watch Limit Information:{Style.RESET_ALL}")
+            print(f"  Current limit: {current_limit}")
+        
+            if current_limit < 100000:
+                print(f"\n{Fore.YELLOW}⚠ Your inotify watch limit is low ({current_limit}){Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}  For real-time monitoring, consider increasing it:{Style.RESET_ALL}")
+                print(f"  {Fore.GREEN}  Temporary increase: sudo sysctl fs.inotify.max_user_watches=100000{Style.RESET_ALL}")
+                print(f"  {Fore.GREEN}  Permanent increase: echo 'fs.inotify.max_user_watches=100000' | sudo tee -a /etc/sysctl.conf{Style.RESET_ALL}")
+            else:
+                print(f"  {Fore.GREEN}✓ Watch limit is sufficient for monitoring{Style.RESET_ALL}")
+            
+        except Exception as e:
+            print(f"{Fore.YELLOW}Could not check inotify limit: {e}{Style.RESET_ALL}")
+        # ============================================
+        # =========================================
     def _get_system_paths(self):
         """Get critical system paths based on OS"""
         system = platform.system().lower()
@@ -910,7 +937,7 @@ class SystemIntegrityMonitor:
         return report_file
     
     def generate_pdf_report(self, changes=None, scan_results=None):
-        """Generate PDF report (simplified version)"""
+        """Generate PDF report with ASCII characters only"""
         try:
             from fpdf import FPDF
             import os
@@ -918,36 +945,47 @@ class SystemIntegrityMonitor:
         except ImportError:
             print(f"{Fore.RED}✗ fpdf2 not installed. Install with: pip install fpdf2{Style.RESET_ALL}")
             return None
-    
+
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         report_file = os.path.join(self.report_dir, f'report_{timestamp}.pdf')
-    
+
         if scan_results is None:
             scan_results = self.scan_system()
-    
+
         pdf = FPDF()
         pdf.add_page()
+    
+    # Use a font that supports basic characters
         pdf.set_font("Helvetica", size=10)
-        
+    
+    # Header
         pdf.set_font("Helvetica", 'B', 16)
         pdf.cell(0, 10, "SYSTEM INTEGRITY REPORT", 0, 1, 'C')
         pdf.ln(5)
-        
+    
+    # Metadata
         pdf.set_font("Helvetica", 'B', 11)
         pdf.cell(0, 8, "REPORT METADATA", 0, 1, 'L')
         pdf.set_font("Helvetica", size=9)
-        
+    
         pdf.cell(40, 6, "Generated:", 0, 0)
         pdf.cell(0, 6, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 0, 1)
-        
+    
         pdf.cell(40, 6, "Hostname:", 0, 0)
-        pdf.cell(0, 6, scan_results['system_info'].get('hostname', 'Unknown'), 0, 1)
-        
+        pdf.cell(0, 6, str(scan_results['system_info'].get('hostname', 'Unknown')), 0, 1)
+    
         pdf.cell(40, 6, "OS:", 0, 0)
         pdf.cell(0, 6, f"{scan_results['system_info'].get('os', 'Unknown')} {scan_results['system_info'].get('os_version', '')}", 0, 1)
-        
+    
+        pdf.cell(40, 6, "Architecture:", 0, 0)
+        pdf.cell(0, 6, str(scan_results['system_info'].get('architecture', 'Unknown')), 0, 1)
+    
+        pdf.cell(40, 6, "Scan Settings:", 0, 0)
+        pdf.cell(0, 6, f"Max Files: {self.max_files_per_scan if self.max_files_per_scan > 0 else 'Unlimited'}, Depth: {self.max_depth}, Timeout: {self.scan_timeout}s", 0, 1)
+    
         pdf.ln(5)
-        
+    
+    # Scan Summary
         total_files = (
             len(scan_results.get('critical_files', [])) +
             len(scan_results.get('configs', [])) +
@@ -955,11 +993,11 @@ class SystemIntegrityMonitor:
             len(scan_results.get('databases', [])) +
             len(scan_results.get('files', []))
         )
-        
+    
         pdf.set_font("Helvetica", 'B', 11)
         pdf.cell(0, 8, "SCAN SUMMARY", 0, 1, 'L')
         pdf.set_font("Helvetica", size=9)
-        
+    
         stats = [
             ("Critical System Files:", len(scan_results.get('critical_files', []))),
             ("Configuration Files:", len(scan_results.get('configs', []))),
@@ -968,26 +1006,122 @@ class SystemIntegrityMonitor:
             ("User Files:", len(scan_results.get('files', []))),
             ("TOTAL FILES SCANNED:", total_files)
         ]
-        
+    
         for label, value in stats:
             pdf.cell(50, 6, label, 0, 0)
             pdf.cell(0, 6, str(value), 0, 1)
-        
+    
         pdf.ln(5)
-        
+    
+    # Integrity Findings (if changes exist)
         if changes and any([changes.get('new_files', []), changes.get('modified_files', []), changes.get('deleted_files', [])]):
             pdf.set_font("Helvetica", 'B', 11)
             pdf.cell(0, 8, "INTEGRITY FINDINGS", 0, 1, 'L')
             pdf.set_font("Helvetica", size=9)
+        
+            new_count = len(changes.get('new_files', []))
+            modified_count = len(changes.get('modified_files', []))
+            deleted_count = len(changes.get('deleted_files', []))
+            permission_count = len(changes.get('permission_changes', []))
+        
+            pdf.cell(40, 5, f"New Files:", 0, 0)
+            pdf.cell(0, 5, str(new_count), 0, 1)
+        
+            pdf.cell(40, 5, f"Modified Files:", 0, 0)
+            pdf.cell(0, 5, str(modified_count), 0, 1)
+        
+            pdf.cell(40, 5, f"Deleted Files:", 0, 0)
+            pdf.cell(0, 5, str(deleted_count), 0, 1)
+        
+            pdf.cell(40, 5, f"Permission Changes:", 0, 0)
+            pdf.cell(0, 5, str(permission_count), 0, 1)
+        
+        # Show critical changes if any
+            critical_items = []
+            for change_type in ['new_files', 'modified_files', 'deleted_files']:
+                for item in changes.get(change_type, []):
+                    if item.get('severity') in ['CRITICAL', 'HIGH']:
+                        critical_items.append((change_type, item))
+        
+            if critical_items:
+                pdf.ln(3)
+                pdf.set_font("Helvetica", 'B', 10)
+                pdf.set_text_color(255, 0, 0)
+                pdf.cell(0, 6, "CRITICAL/HIGH SEVERITY CHANGES:", 0, 1)
+                pdf.set_text_color(0, 0, 0)
+                pdf.set_font("Helvetica", size=8)
             
-            pdf.cell(40, 5, f"New Files: {len(changes.get('new_files', []))}", 0, 1)
-            pdf.cell(40, 5, f"Modified Files: {len(changes.get('modified_files', []))}", 0, 1)
-            pdf.cell(40, 5, f"Deleted Files: {len(changes.get('deleted_files', []))}", 0, 1)
+                for change_type, item in critical_items[:10]:
+                    path = str(item.get('path', 'Unknown'))
+                    if len(path) > 70:
+                        path = path[:67] + "..."
+                    pdf.cell(15, 4, f"[{item.get('severity', 'UNKNOWN')}]", 0, 0)
+                    pdf.multi_cell(0, 4, path)
         else:
             pdf.set_text_color(0, 128, 0)
             pdf.set_font("Helvetica", 'B', 11)
-            pdf.cell(0, 8, "✓ SYSTEM INTEGRITY INTACT - No changes detected", 0, 1)
+            pdf.cell(0, 8, "SYSTEM INTEGRITY INTACT - No changes detected", 0, 1)
+            pdf.set_text_color(0, 0, 0)
+    
+        pdf.ln(5)
+    
+    # Sample of recent files
+        pdf.set_font("Helvetica", 'B', 11)
+        pdf.cell(0, 8, "RECENT FILES (Sample)", 0, 1, 'L')
+        pdf.set_font("Helvetica", size=8)
+    
+        categories = [
+            ('Critical System Files', scan_results.get('critical_files', [])[:5]),
+            ('Recent Configs', sorted(scan_results.get('configs', []), 
+                                key=lambda x: x.get('modified', ''), reverse=True)[:5]),
+            ('Recent Logs', sorted(scan_results.get('logs', []), 
+                            key=lambda x: x.get('modified', ''), reverse=True)[:5]),
+            ('Recent Databases', sorted(scan_results.get('databases', []), 
+                                  key=lambda x: x.get('modified', ''), reverse=True)[:5]),
+            ('Recent User Files', sorted(scan_results.get('files', []), 
+                                   key=lambda x: x.get('modified', ''), reverse=True)[:5])
+        ]
+    
+        for cat_name, items in categories:
+            if items:
+                pdf.set_font("Helvetica", 'B', 9)
+                pdf.cell(0, 5, f"{cat_name}:", 0, 1)
+                pdf.set_font("Helvetica", size=8)
+            
+                for item in items:
+                    name = str(item.get('name', 'Unknown'))
+                    if len(name) > 40:
+                        name = name[:37] + "..."
+                    modified = item.get('modified', 'Unknown')[:10] if item.get('modified') else 'Unknown'
+                    pdf.cell(40, 4, modified, 0, 0)
+                    pdf.cell(0, 4, name, 0, 1)
+                pdf.ln(2)
+    
+    # Progress bar summary
+        pdf.set_font("Helvetica", 'B', 10)
+        pdf.cell(0, 6, "SCAN PROGRESS SUMMARY", 0, 1, 'L')
+        pdf.set_font("Helvetica", size=8)
+    
+    # ASCII progress bar
+        if total_files > 0:
+            bar_length = 40
+            filled = bar_length
+            progress_bar = "[" + "=" * filled + "]" + f" 100% ({total_files} files)"
         
+            pdf.cell(0, 4, f"Configuration Files: {len(scan_results.get('configs', []))}", 0, 1)
+            pdf.cell(0, 4, f"Log Files: {len(scan_results.get('logs', []))}", 0, 1)
+            pdf.cell(0, 4, f"Database Files: {len(scan_results.get('databases', []))}", 0, 1)
+            pdf.cell(0, 4, f"System Files: {len(scan_results.get('critical_files', []))}", 0, 1)
+            pdf.cell(0, 4, f"User Files: {len(scan_results.get('files', []))}", 0, 1)
+            pdf.ln(2)
+            pdf.cell(0, 4, f"Progress: {progress_bar}", 0, 1)
+    
+    # Footer
+        pdf.set_y(-30)
+        pdf.set_font("Helvetica", 'I', 8)
+        pdf.cell(0, 5, "Generated by DSTerminal Integrity Monitor v2.0.59", 0, 1, 'C')
+        pdf.cell(0, 5, f"Report: {os.path.basename(report_file)}", 0, 1, 'C')
+    
         try:
             pdf.output(report_file)
             print(f"{Fore.GREEN}✓ PDF report generated: {report_file}{Style.RESET_ALL}")
@@ -995,7 +1129,8 @@ class SystemIntegrityMonitor:
         except Exception as e:
             print(f"{Fore.RED}✗ Failed to generate PDF: {e}{Style.RESET_ALL}")
             return None
-    
+
+
     def generate_all_reports(self, changes, scan_results=None):
         """Generate all report formats"""
         if scan_results is None:
@@ -1254,30 +1389,47 @@ class SystemIntegrityMonitor:
     
     def _print_progress(self, current, total, message, for_pdf=False):
         """Print progress bar with spinning wheels - with PDF compatibility"""
-        percent = (current / total) * 100
+        percent = (current / total) * 100 if total > 0 else 0
         bar_length = 40
-        filled_length = int(bar_length * current // total)
-    
+        filled_length = int(bar_length * current // total) if total > 0 else 0
+
         if for_pdf:
         # Use ASCII characters for PDF (no Unicode)
             bar = '=' * filled_length + '-' * (bar_length - filled_length)
             progress_text = f"{message}: [{bar}] {percent:.1f}% [{current}/{total}]"
         else:
-        # Use Unicode for terminal display
+            # Use Unicode for terminal display
             bar = '█' * filled_length + '░' * (bar_length - filled_length)
             progress_text = f"{message}: |{bar}| {percent:.1f}% [{current}/{total}]"
 
-        # Add spinning wheels based on progress
+        # Add spinning wheels based on progress (only for terminal)
             wheels = ['◴', '◷', '◶', '◵']
             wheel_index = current % 4
-        
-        # Different colors for wheels
+    
             left_wheel = f"{Fore.CYAN}{wheels[wheel_index]}{Style.RESET_ALL}"
             center_wheel = f"{Fore.GREEN}{wheels[(wheel_index + 1) % 4]}{Style.RESET_ALL}"
             right_wheel = f"{Fore.MAGENTA}{wheels[(wheel_index + 2) % 4]}{Style.RESET_ALL}"
-        
+    
             progress_text = f"{message}: |{bar}| {percent:.1f}% [{current}/{total}] {left_wheel}{center_wheel}{right_wheel}"
     
+    # Center the display
+        terminal_width = shutil.get_terminal_size().columns
+
+    # Remove ANSI codes for width calculation if present
+        if not for_pdf:
+            clean_text = progress_text.replace(Fore.CYAN, '').replace(Fore.GREEN, '').replace(Fore.MAGENTA, '').replace(Style.RESET_ALL, '')
+            text_width = len(clean_text)
+        else:
+            text_width = len(progress_text)
+
+        padding = max(0, (terminal_width - text_width) // 2)
+
+        print(f"\r{' ' * padding}{progress_text}", end='', flush=True)
+
+        if current == total:
+            print()
+
+
     # Center the display
         terminal_width = shutil.get_terminal_size().columns
     
@@ -1519,47 +1671,84 @@ class AlertManager:
         self.monitored_paths = []
         
     def start_monitoring(self, paths=None):
-        """Start real-time monitoring"""
+        """Start real-time monitoring with improved watch limit handling"""
         if not WATCHDOG_AVAILABLE:
             print(f"{Fore.RED}Watchdog not installed. Please install with: pip install watchdog{Style.RESET_ALL}")
             return
-        
+    
         if self.running:
             print(f"{Fore.YELLOW}Monitoring already running{Style.RESET_ALL}")
             return
-        
-        # Default paths to monitor
+    
+    # Check and warn about inotify limits on Linux
+        if platform.system().lower() == 'linux':
+            try:
+                with open('/proc/sys/fs/inotify/max_user_watches', 'r') as f:
+                    current_limit = int(f.read().strip())
+                    print(f"{Fore.CYAN}Current inotify watch limit: {current_limit}{Style.RESET_ALL}")
+                
+                    if current_limit < 100000:
+                        print(f"{Fore.YELLOW}⚠ Warning: Low inotify watch limit ({current_limit}){Style.RESET_ALL}")
+                        print(f"{Fore.YELLOW}  To increase, run: sudo sysctl fs.inotify.max_user_watches=100000{Style.RESET_ALL}")
+                        print(f"{Fore.YELLOW}  Or add to /etc/sysctl.conf for persistence{Style.RESET_ALL}")
+            except:
+                pass
+    
+    # Default paths to monitor - BE MORE SELECTIVE
         if paths is None:
+            # Don't monitor root! That's too many directories
+        #    Instead, monitor specific user directories
             paths = [
                 os.path.expanduser('~'),  # User home
-                'C:\\' if platform.system().lower() == 'windows' else '/',  # Root
             ]
         
+        # Add Documents, Downloads, Desktop specifically
+            for dir_name in ['Documents', 'Downloads', 'Desktop']:
+                user_dir = os.path.expanduser(f'~/{dir_name}')
+                if os.path.exists(user_dir):
+                    paths.append(user_dir)
+    
         self.monitored_paths = paths
         self.running = True
-        
-        # Start observer
+    
+    # Start observer
         self.observer = Observer()
         handler = RealTimeHandler(self)
-        
+    
+        successful_monitors = 0
         for path in paths:
             if os.path.exists(path):
                 try:
-                    self.observer.schedule(handler, path, recursive=True)
-                    print(f"{Fore.GREEN}Monitoring: {path}{Style.RESET_ALL}")
+                    # For user home, don't monitor recursively if it's too large
+                    if path == os.path.expanduser('~'):
+                        # Monitor home but with limited recursion depth
+                        self.observer.schedule(handler, path, recursive=False)
+                        print(f"{Fore.GREEN}Monitoring: {path} (non-recursive){Style.RESET_ALL}")
+                    else:
+                        self.observer.schedule(handler, path, recursive=True)
+                        print(f"{Fore.GREEN}Monitoring: {path}{Style.RESET_ALL}")
+                    successful_monitors += 1
                 except Exception as e:
-                    print(f"{Fore.RED}Failed to monitor {path}: {e}{Style.RESET_ALL}")
-        
-        if self.observer:
+                    if "inotify watch limit" in str(e):
+                        print(f"{Fore.RED}Failed to monitor {path}: inotify limit reached{Style.RESET_ALL}")
+                        print(f"{Fore.YELLOW}Try monitoring specific directories instead of entire root{Style.RESET_ALL}")
+                    else:
+                        print(f"{Fore.RED}Failed to monitor {path}: {e}{Style.RESET_ALL}")
+    
+            if successful_monitors > 0 and self.observer:
             self.observer.start()
-            print(f"\n{Fore.GREEN}✅ Real-time monitoring started{Style.RESET_ALL}")
+            print(f"\n{Fore.GREEN}✅ Real-time monitoring started ({successful_monitors} paths){Style.RESET_ALL}")
             print(f"{Fore.YELLOW}Press Ctrl+C in the terminal to stop monitoring{Style.RESET_ALL}\n")
-            
-            # Start a thread to keep monitoring active
+        
+        # Start a thread to keep monitoring active
             self._monitor_thread = threading.Thread(target=self._keep_monitoring)
             self._monitor_thread.daemon = True
             self._monitor_thread.start()
-    
+        else:
+            print(f"{Fore.RED}Failed to start monitoring - no valid paths{Style.RESET_ALL}")
+    #    /================================
+    # ===================================
+    # 
     def _keep_monitoring(self):
         """Keep monitoring active"""
         try:
