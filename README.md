@@ -1,6 +1,6 @@
 # DSTerminal
 <p align="center">
-  <img src="assets/dsterminal-logo.png" width="180"/>
+  <img src="./assets/dsterminal-logo.png.png" width="180"/>
 </p>
 
 <h1 align="center">🛡️ DSTerminal</h1>
