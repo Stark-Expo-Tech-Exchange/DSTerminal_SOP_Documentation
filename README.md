@@ -23,7 +23,6 @@
 
 
 
-<h1 align="center">🛡️ DSTerminal</h1>
 <p align="center">
   <b>Cybersecurity Command Center & Defensive Operations Platform</b><br>
   <i>Lightweight • Powerful • Cross-Platform • African-built 🇲🇼</i>
