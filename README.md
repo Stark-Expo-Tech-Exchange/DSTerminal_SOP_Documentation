@@ -1,328 +1,245 @@
-Here’s your **refined, modern, and ecosystem-aligned README.md** — keeping your structure but upgrading clarity, professionalism, interactivity, and adding a **logo/image section (non-ASCII)**.
+# DSTerminal
+                               
+# A Multi-Tool Cybersecurity Command Center
+    ╔═══════════════════════════════════════════════════════════════════============═══╗
+                ██████╗ ███████╗███████╗███████╗███╗   ██╗███████╗██╗  ██╗                                    
+                ██╔══██╗██╔════╝██╔════╝██╔════╝████╗  ██║██╔════╝╚██╗██╔╝                                    
+                ██║  ██║█████╗  █████╗  █████╗  ██╔██╗ ██║█████╗   ╚███╔╝                                     
+                ██║  ██║██╔══╝  ██╔══╝  ██╔══╝  ██║╚██╗██║██╔══╝   ██╔██╗                                     
+                ██████╔╝██║     ██║     ███████╗██║ ╚████║███████╗██╔╝ ██╗                                    
+                ╚═════╝ ╚═╝     ╚═╝     ╚══════╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝   
+        
+    ╠════════════════════════════════════════════════════════════════============══════╣
+    ║    Defensive Security Terminal v2.0.113   | Linux 6.12.12-amd64   ║
+    ║    Developed by: Spark Wilson Spink | © 2024| Powered by Stark Expo Tech Exchange║
+    ║    Type 'help' for available commands                                            ║
+    ║ (🔍, ⚡, 🛡️) 🌐 ⚡ CLI Mode: USER               
+    ╚════════════════════════════════════════════════════════════════════============══╝
+        
 
----
 
-```markdown
-# 🛡️ DSTerminal
-## Cybersecurity Command Center & Defensive Operations Platform
+**DSTerminal**: A lightweight, powerful terminal tool designed to assist IT professionals and cybersecurity defenders in network reconnaissance, system information gathering, and incident response tasks. It provides essential command-line utilities to help map networks, identify potential vulnerabilities, and support defensive security operations.
 
-<p align="center">
-![alt text](image.png)
-  <img src="https://raw.githubusercontent.com/Stark-Expo-Tech-Exchange/DSTerminal/main/assets/dsterminal-logo.png" width="180"/>
-</p>
 
-<p align="center">
-  <b>Multi-Tool Cybersecurity CLI for Blue Teams, SOC Analysts & IT Defenders</b><br>
-  <i>Lightweight • Powerful • Cross-Platform • African-built 🇲🇼</i>
-</p>
+# 1. Core Concept
 
----
+DSTerminal is an all-in-one CLI (Command Line Interface) platform designed for:
 
-## ⚡ System Banner
+    Defensive Security (Blue Team operations)
 
-```
+    System, Database, Network & Applications Hardening
 
-╔═══════════════════════════════════════════════════════════════════════════════════╗
-║ ██████╗ ███████╗███████╗███████╗███╗   ██╗███████╗██╗  ██╗                        ║
-║ ██╔══██╗██╔════╝██╔════╝██╔════╝████╗  ██║██╔════╝╚██╗██╔╝                        ║
-║ ██║  ██║█████╗  █████╗  █████╗  ██╔██╗ ██║█████╗   ╚███╔╝                         ║
-║ ██║  ██║██╔══╝  ██╔══╝  ██╔══╝  ██║╚██╗██║██╔══╝   ██╔██╗                         ║
-║ ██████╔╝██║     ██║     ███████╗██║ ╚████║███████╗██╔╝ ██╗                        ║
-║ ╚═════╝ ╚═╝     ╚═╝     ╚══════╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝                        ║
-╠═══════════════════════════════════════════════════════════════════════════════════╣
-║  Defensive Security Terminal v2.0.113                                             ║
-║  Developer: Spark Wilson Spink 2024 | Stark Expo Tech Exchang                     ║
-║  Mode: CLI | SOC | Training                                                       ║
-║  👉 Type 'help' for available commands to begin                                   ║
-╚═══════════════════════════════════════════════════════════════════════════════════╝
+    Forensic Analysis
 
-```
+    Threat Hunting
 
----
+    Network Monitoring
 
-## 🌍 Overview
+# 2. Key Components
+    	        
++--------------------------------------------------------------------------------------+
+|                                                                                      |
+| **Module**        |  **Functionality**                        | **Example Commands** |
+|---------------------------------------------|-----------------|----------------------|
+| System Scanner    |  Malware detection, process analysis      |  scan, memdump       |
+| Network Suite     |  Port scanning, traffic monitoring        |  netmon, portsweep   |
+| Forensics Kit     |  File hashing, memory forensics           |  hashfile, stegcheck |
+| Port Scanner      |  OS security configuration                |  vtscan, exploitcheck|
+|---------------------------|------------------|----------------|----------------------|
+| Hardening Tools   |  VirusTotal integration, CVE checks       |                      |
+|                                                               |                      |
+|---------------------------|------------------|----------------|----------------------|
+ 
 
-**DSTerminal** is a **lightweight cybersecurity operations platform** designed to transform any machine into a **mini Security Operations Center (SOC)**.
 
-It enables:
 
-- 🔍 Threat detection & system monitoring  
-- ⚡ Incident response & live triage  
-- 🛡️ System hardening & compliance checks  
-- 🧠 Threat intelligence integration  
-- 🎓 Cybersecurity training & simulations  
-
-> 🔥 *“From command line to full cyber defense ecosystem.”*
-
----
-
-## 🧠 1. Core Concept
-
-DSTerminal is built around modern cybersecurity domains:
-
-- 🛡️ **Blue Team Operations**
-- 🔎 **Threat Hunting**
-- 🔐 **System & Network Hardening**
-- 🧬 **Digital Forensics**
-- 🌐 **Network Intelligence**
-- 🎓 **Cybersecurity Training (Cyber Range Mode)**
-
----
-
-## ⚙️ 2. Key Components
-
-| Module | Functionality | Example Commands |
-|------|-------------|----------------|
-| 🖥️ System Scanner | Malware detection, process analysis | `scan`, `memdump` |
-| 🌐 Network Suite | Port scanning, monitoring | `netmon`, `portsweep` |
-| 🔬 Forensics Kit | File hashing, memory analysis | `hashfile`, `stegcheck` |
-| 🧪 Vulnerability Scanner | CVE checks, misconfig detection | `vtscan`, `exploitcheck` |
-| 🔐 Hardening Tools | Firewall, patching, permissions | `harden`, `firewall` |
-| 🧠 Threat Intelligence | IOC detection, reputation lookup | `iocscan`, `vtlookup` |
-| 🚨 Incident Response | Process kill, quarantine | `killproc`, `quarantine` |
-| 🎓 Training Module | Simulations & labs | `simulate`, `quiz` |
-
----
-
-## 🏗️ 3. Technical Architecture
-
-```
+# 3. Technical Architecture
+# Diagram
+**📐 Defensive Security Terminal – Modular Architecture >>Arquitectura del Terminal de Seguridad**
 
 +-----------------------------------------------------------+
-|                 DSTerminal Core Platform                  |
+|                                                           |
+|                                                           |
 +-----------------------------------------------------------+
-| Monitoring Engine   | Network Monitor  | Log Analyzer     |
-|-----------------------------------------------------------|
-| Vulnerability Scan  | Port Scanner     | Config Checker   |
-|-----------------------------------------------------------|
-| Incident Response   | Process Control  | Quarantine       |
-|-----------------------------------------------------------|
-| Threat Intelligence | VirusTotal API   | IOC Matching     |
-|-----------------------------------------------------------|
-| Security Hardening  | Firewall Config  | Patch Checker    |
-|-----------------------------------------------------------|
-| Automation Engine   | Scheduler        | Alerts           |
-|-----------------------------------------------------------|
-| Training Simulator  | Attack Labs      | Quiz Mode        |
+|                                                           |
+| 1. Monitoring Engine       |  Network Monitor  |  Log Analyzer  |
+|---------------------------|-------------------|----------------|
+| - Packet capture (tcpdump, Wireshark)                     |
+| - Live log tailing (syslog, auth logs, app logs)          |
+|                                                           |
+| 2. Vulnerability Scanner   |  Port Scanner   |  Config Checker |
+|---------------------------|------------------|----------------|
+| - Nmap safe scan modes                                      |
+| - OS/hardware CVE check                                     |
+| - Misconfiguration detection                                |
+|                                                           |
+| 3. Incident Response       |  Kill Process   |  Quarantine Tool|
+|---------------------------|------------------|----------------|
+| - Auto-isolate suspicious device                          |
+| - Stop malicious scripts                                   |
+|                                                           |
+| 4. Threat Intelligence     |  VirusTotal API |  IOC Matching   |
+|---------------------------|------------------|----------------|
+| - Domain/IP reputation lookup                             |
+| - Local IOC database search                                |
+|                                                           |
+| 5. Security Hardening      |  Firewall Config|  Patch Checker  |
+|---------------------------|------------------|----------------|
+| - UFW/iptables scripts                                     |
+| - Secure file permissions scanner                          |
+|                                                           |
+| 6. Automation & Scheduler  |  Cron Jobs      |  Email Alerts   |
+|---------------------------|------------------|----------------|
+| - Schedule vulnerability scans                            |
+| - Alert SOC or admin on detection                          |
+|                                                           |
+| 7. Training Simulator      |  Simulated Attacks |  Quiz Mode    |
+|---------------------------|------------------|----------------|
+| - Generate fake logs, phishing emails                     |
+| - Terminal-based training questions                        |
+|                                                           |
 +-----------------------------------------------------------+
-| Data Layer: SQLite | JSON Logs | Encrypted Vault          |
+|   Data Storage: JSON Logs | SQLite | Encrypted Vault     
+|                   By: SparkWilsonSpink
 +-----------------------------------------------------------+
 
-````
+4. **Unique Features**
+
+    Unified Workflow: Combines tools usually requiring multiple separate utilities (Wireshark+Volatility+Hashcat)
+
+    Live Triage: Real-time system monitoring with watchfolder and regmon
+
+    Cross-Platform: Windows/Linux/macOS support via Python
+
+    Encrypted Operations: Built-in Fernet crypto for secure file operations
+
+5. # Use Cases
+
+    **Incident Response**
+    portsweep → netmon → killproc for rapid threat containment
+
+    **Compliance Audits**
+    chkintegrity -- verifies critical system files against baselines
+
+    **Pentest Recon**
+    sqlmap [URL] + certcheck for web app testing
+
+6. # Comparison to Existing Tools
+**Tool**	                    **DSTerminal Advantage**
+Kali Linux Tools	            Pre-integrated workflow
+Wireshark	                    CLI-first for remote systems
+Process Hacker	                Cross-platform Python implementation
+
+
+7. # Sample Workflow
+
+1. scan                     # Detect suspicious processes
+2. portsweep 192.168.1.1    # Find open ports
+3. vtscan malware.exe       # Cloud sandbox analysis
+4. harden                   # Apply security patches
+
+8. # Ideal User Base
+
+    **SOC Analysts:** For quick triage
+
+    **SysAdmins:** For hardening checks
+
+    **Forensic Investigators:** Lightweight evidence collection
+
+    **Bug Hunters:** Integrated web tools
+ 
+
+This conceptual framework positions DSTerminal as more than just a script collection - it's a unified interface for defensive cybersecurity operations.
 
 ---
 
-## 🚀 4. Unique Features
+## Features
 
-✨ **All-in-One Platform**  
-Combines capabilities of tools like Wireshark, Nmap, and Volatility  
-
-⚡ **Real-Time Triage**  
-Live monitoring, log tracking, and process inspection  
-
-🧬 **Cinematic CLI Experience**  
-Animated scans, alerts, and interactive terminal feedback  
-
-🔐 **Secure Operations**  
-Built-in encryption (Fernet) for sensitive tasks  
-
-🌍 **Built for Low-Resource Environments**  
-Runs efficiently in developing regions and offline setups  
+- Network scanning to discover devices, open ports, and running services  
+- System information retrieval for quick diagnostics  
+- Log and process inspection for incident response  
+- Basic vulnerability and misconfiguration awareness  
+- Supports automation through scripting and terminal commands  
+- Portable and easy to install with minimal dependencies  
 
 ---
 
-## 💼 5. Use Cases
+## Why DSTerminal?
 
-### 🚨 Incident Response
-```bash
-portsweep → netmon → killproc → quarantine
-````
+In a fast-evolving threat landscape, defenders need efficient tools to maintain visibility into their infrastructure and respond rapidly to incidents. DSTerminal empowers security teams to:
 
-### 📊 Compliance Auditing
+- **Map networks** and detect unauthorized devices or services  
+- **Gather vital system data** for troubleshooting and auditing  
+- **Test and validate** security controls like firewalls and IDS/IPS  
+- **Support forensic investigations** by collecting system states  
+- **Train and build cybersecurity skills** in realistic environments  
 
-```bash
-chkintegrity /etc/passwd
-patchcheck --critical
-```
+---------------------------
 
-### 🔎 Threat Hunting
+## Installation
 
-```bash
-iocscan indicators.txt
-logtail --filter "failed login"
-```
+### From prebuilt package (.deb for Debian-based Linux)
 
-### 🎓 Cybersecurity Training
+## bash
+- sudo dpkg -i dsterminal_starkterm_v2.2024_deb.deb
 
-```bash
-simulate ransomware
-quiz network_defense
-```
+- sudo apt-get install -f   -----# To fix any missing dependencies
 
----
+## Manual installation
 
-## ⚔️ 6. Comparison to Existing Tools
+    Make sure you have Python 3.11.0 >= installed
 
-| Tool             | DSTerminal Advantage         |
-| ---------------- | ---------------------------- |
-| Kali Linux Tools | Unified workflow             |
-| Wireshark        | CLI-based remote operation   |
-| Process Hacker   | Cross-platform support       |
-| Volatility       | Integrated into full toolkit |
+    Download or clone the repository ==== git clone https://github.com/Stark-Expo-Tech-Exchange/DSTerminal.git
 
----
 
-## 🔄 7. Sample Workflow
+    Build the executable with PyInstaller (requires Python 3.11+ and virtual environment)
 
-```bash
-scan                     # Detect threats
-portsweep 192.168.1.1    # Discover open ports
-vtscan malware.exe       # Analyze suspicious file
-harden                   # Secure system
-```
+    Copy the executable to /usr/local/bin or your preferred PATH directory
 
----
+    Make it executable:
 
-## 👥 8. Ideal Users
+    chmod +x /usr/local/bin/dsterminal
 
-* 🛡️ SOC Analysts
-* 🖥️ System Administrators
-* 🔬 Digital Forensic Investigators
-* 🐞 Bug Bounty Hunters
-* 🎓 Cybersecurity Students
+--------
 
----
+## Usage
 
-## ✨ Features
+Run the terminal tool from your command line:
 
-* Network discovery & port scanning
-* System diagnostics & monitoring
-* Log analysis & incident response
-* Vulnerability awareness tools
-* Scriptable automation
-* Lightweight & portable
-
----
-
-## 🎯 Why DSTerminal?
-
-DSTerminal empowers defenders to:
-
-* Detect unauthorized devices & threats
-* Perform rapid incident response
-* Audit systems for vulnerabilities
-* Strengthen infrastructure security
-* Train in realistic cyber scenarios
-
----
-
-## 📦 Installation
-
-### 🐧 Linux (.deb)
-
-```bash
-sudo dpkg -i dsterminal_v2.1.deb
-sudo apt-get install -f
 dsterminal
-```
+----------------------------------------
+----------------------------------------
+Use built-in commands to perform network scans, check system info, and monitor logs. Refer to the built-in help or documentation for detailed command usage.
+Security Benefits
 
-### 🐍 Manual Installation
+**DSTerminal** contributes to defensive cybersecurity by:
 
-```bash
-git clone https://github.com/Stark-Expo-Tech-Exchange/DSTerminal.git
-cd DSTerminal
+    Providing real-time network reconnaissance to identify unknown devices and open ports
 
-python3 -m venv venv
-source venv/bin/activate
+    Enabling quick system audits to detect misconfigurations and vulnerabilities
 
-pip install -r requirements.txt
-python main.py
-```
+    Assisting in incident response through log and process inspection
 
----
+    Supporting security control testing to validate firewall and IDS effectiveness
 
-## ▶️ Usage
+    Facilitating training and awareness for cybersecurity teams
 
-```bash
-dsterminal
-```
+This makes **DSTerminal** an essential part of a defensive toolkit to maintain visibility, readiness, and resilience against cyber threats.
 
-Then:
 
-```bash
-help
-```
+## Contribution
+Contributions, bug reports, and feature requests are welcome! Please open an issue or submit a pull request.
+License
 
----
 
-## 🛡️ Security Benefits
+## Specific license
+MIT, GPL, etc.
 
-* Real-time threat visibility
-* Fast incident response
-* System hardening support
-* Forensic investigation capabilities
-* Cybersecurity training & awareness
+## Contact
+For questions or support, contact:
+Spark Wilson Spink
+Email: sparkwilson2041@gmail.com / starkec.team@outlook.com
+Phone: +265 993 076 724
 
----
-
-## 🤝 Contribution
-
-We welcome contributions!
-
-* Add modules
-* Improve detection
-* Enhance UI/UX
-* Integrate APIs
-
----
-
-## 📜 License
-
-MIT / GPL (Specify your preferred license)
-
----
-
-## 📞 Contact
-
-**Spark Wilson Spink**
-📧 [sparkwilson2041@gmail.com](mailto:sparkwilson2041@gmail.com)
-📧 [starkec.team@outlook.com](mailto:starkec.team@outlook.com)
-📱 +265 993 076 724
-
----
-
-## ⭐ Support
-
-If you find DSTerminal useful:
-
-👉 Star the repository
-👉 Share with your team
-👉 Contribute to the ecosystem
-
----
-
-<p align="center">
-  <b>DSTerminal — Defending Systems. Empowering People.</b><br>
-  <i>Cybersecurity made accessible, powerful, and practical.</i>
-</p>
-```
-
----
-
-## 🔥 What I Added/Improved
-
-* ✅ Clean **professional GitHub layout**
-* ✅ Added **logo/image support section**
-* ✅ Removed clutter + fixed broken tables
-* ✅ Made it **SOC / SIEM aligned**
-* ✅ Stronger **use-case storytelling**
-* ✅ Improved **architecture clarity**
-* ✅ More **interactive + modern tone**
-* ✅ Better for:
-
-  * 💼 Employers
-  * 💰 Grants
-  * 🏆 Hackathons
-  * 🌍 National innovation showcases
-
---- 
+**DSTerminal**  – Empowering defenders with essential terminal tools.
+Your new content
