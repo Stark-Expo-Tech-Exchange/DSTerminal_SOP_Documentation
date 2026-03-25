@@ -1,9 +1,8 @@
 # DSTerminal
+<h1 align="center">🛡️ DSTerminal</h1>
 <p align="center">
   <img src="assets/dsterminal-logo.png" alt="DSTerminal Logo" width="200"/>
 </p>
-
-<h1 align="center">🛡️ DSTerminal</h1>
 
 <p align="center">
   Cybersecurity Command Center & Defensive Operations Platform
@@ -22,9 +21,7 @@
   <img src="https://img.shields.io/badge/Python-3.11+-brightgreen"/>
 </p>
 
-<p align="center">
-  <img src="assets/dsterminal-logo.png" alt="DSTerminal Logo" width="200"/>
-</p>
+
 
 <h1 align="center">🛡️ DSTerminal</h1>
 <p align="center">
@@ -35,7 +32,7 @@
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="assets/dsterminal-logo.png" width="250"/>
+  <img src="assets/screen1.png" width="250"/>
   <img src="assets/screen2.png" width="250"/>
   <img src="assets/screen3.png" width="250"/>
 </p>
