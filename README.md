@@ -1,6 +1,6 @@
 # DSTerminal
 <p align="center">
-  <img src="./assets/dsterminal-logo.png.png" width="180"/>
+  <img src="assets/dsterminal-logo.png" alt="DSTerminal Logo" width="200"/>
 </p>
 
 <h1 align="center">🛡️ DSTerminal</h1>
@@ -35,7 +35,7 @@
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="assets/dsterminal-logo.png.png" width="250"/>
+  <img src="assets/dsterminal-logo.png" width="250"/>
   <img src="assets/screen2.png" width="250"/>
   <img src="assets/screen3.png" width="250"/>
 </p>
