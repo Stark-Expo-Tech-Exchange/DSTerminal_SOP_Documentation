@@ -1,4 +1,4 @@
-Here's a professionally organized and interactive README.md file for DSTerminal, designed to be both informative and engaging for cybersecurity professionals:
+DSTerminal, designed to be both informative and engaging for cybersecurity professionals:
 
 ```markdown
 # 🛡️ DSTerminal - Defensive Security Terminal
