@@ -1,4 +1,3 @@
-# DSTerminal
 <h1 align="center">🛡️ DSTerminal</h1>
 <p align="center">
   <img src="assets/dsterminal-logo.png" alt="DSTerminal Logo" width="200"/>
