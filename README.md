@@ -35,7 +35,7 @@
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="assets/screen1.png" width="250"/>
+  <img src="assets/dsterminal-logo.png.png" width="250"/>
   <img src="assets/screen2.png" width="250"/>
   <img src="assets/screen3.png" width="250"/>
 </p>
