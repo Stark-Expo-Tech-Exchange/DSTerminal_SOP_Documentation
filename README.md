@@ -1,5 +1,46 @@
 # DSTerminal
-                               
+<p align="center">
+  <img src="assets/dsterminal-logo.png" width="180"/>
+</p>
+
+<h1 align="center">🛡️ DSTerminal</h1>
+
+<p align="center">
+  Cybersecurity Command Center & Defensive Operations Platform
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Linux-Supported-green"/>
+  <img src="https://img.shields.io/badge/Version-2.1-blue"/>
+  <img src="https://img.shields.io/badge/License-MIT-yellow"/>
+</p>
+
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Linux-Supported-green"/>
+  <img src="https://img.shields.io/badge/Version-2.1-blue"/>
+  <img src="https://img.shields.io/badge/License-MIT-yellow"/>
+  <img src="https://img.shields.io/badge/Python-3.11+-brightgreen"/>
+</p>
+
+        <p align="center">
+  <img src="assets/dsterminal-logo.png" alt="DSTerminal Logo" width="200"/>
+</p>
+
+<h1 align="center">🛡️ DSTerminal</h1>
+<p align="center">
+  <b>Cybersecurity Command Center & Defensive Operations Platform</b><br>
+  <i>Lightweight • Powerful • Cross-Platform • African-built 🇲🇼</i>
+</p>
+
+## 📸 Screenshots
+
+<p align="center">
+  <img src="assets/screen1.png" width="250"/>
+  <img src="assets/screen2.png" width="250"/>
+  <img src="assets/screen3.png" width="250"/>
+</p>
+
 # A Multi-Tool Cybersecurity Command Center
     ╔═══════════════════════════════════════════════════════════════════============═══╗
                 ██████╗ ███████╗███████╗███████╗███╗   ██╗███████╗██╗  ██╗                                    
