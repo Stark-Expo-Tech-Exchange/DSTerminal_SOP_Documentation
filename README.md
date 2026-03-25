@@ -11,19 +11,18 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Linux-Supported-green"/>
-  <img src="https://img.shields.io/badge/Version-2.1-blue"/>
+  <img src="https://img.shields.io/badge/Version-2.0.113-blue"/>
   <img src="https://img.shields.io/badge/License-MIT-yellow"/>
 </p>
 
 
 <p align="center">
   <img src="https://img.shields.io/badge/Linux-Supported-green"/>
-  <img src="https://img.shields.io/badge/Version-2.1-blue"/>
   <img src="https://img.shields.io/badge/License-MIT-yellow"/>
   <img src="https://img.shields.io/badge/Python-3.11+-brightgreen"/>
 </p>
 
-        <p align="center">
+<p align="center">
   <img src="assets/dsterminal-logo.png" alt="DSTerminal Logo" width="200"/>
 </p>
 
